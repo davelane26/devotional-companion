@@ -1,5 +1,16 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
-import { Play, Pause, Square, Gauge, Volume2, Music, SkipBack, SkipForward, ExternalLink } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  Square,
+  Gauge,
+  Volume2,
+  Music,
+  SkipBack,
+  SkipForward,
+  ExternalLink,
+  Loader2,
+} from 'lucide-react';
 import {
   splitTextIntoChunks,
   isSpeechSynthesisSupported,
@@ -20,8 +31,26 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
   const hasMp3 = Boolean(src && src.trim());
   const cleanText = text?.trim() || '';
 
-  // Mode: 'mp3' or 'tts'. Default to 'mp3' if available, otherwise 'tts'
+  // Active mode: 'mp3' or 'tts'
   const [activeMode, setActiveMode] = useState<'mp3' | 'tts'>(() => (hasMp3 ? 'mp3' : 'tts'));
+
+  // MP3 state
+  const [isMp3Buffering, setIsMp3Buffering] = useState(false);
+
+  // TTS state
+  const [hasSpeechSupport, setHasSpeechSupport] = useState(() => isSpeechSynthesisSupported());
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+
+  // References
+  const utteranceQueueRef = useRef<SpeechSynthesisUtterance[]>([]);
+  const currentChunkRef = useRef<number>(0);
+  const playbackRateRef = useRef<number>(playbackRate);
+  playbackRateRef.current = playbackRate;
+
+  // Split text into natural sentence chunks
+  const chunks = useMemo(() => splitTextIntoChunks(cleanText), [cleanText]);
 
   // Sync mode if props change
   useEffect(() => {
@@ -30,29 +59,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
     }
   }, [hasMp3, cleanText]);
 
-  // TTS State
-  const [hasSpeechSupport, setHasSpeechSupport] = useState(() => isSpeechSynthesisSupported());
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-
-  // References to handle Chrome/Safari speech bugs & garbage collection
-  const activeUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const isCancelledRef = useRef<boolean>(false);
-  const currentChunkRef = useRef<number>(0);
-  const playbackRateRef = useRef<number>(playbackRate);
-  playbackRateRef.current = playbackRate;
-
-  // Split text into small sentence chunks (max ~180 chars) to prevent browser cutoff
-  const chunks = useMemo(() => splitTextIntoChunks(cleanText), [cleanText]);
-
-  // Check speech synthesis support and load voices
+  // Voice setup
   useEffect(() => {
     const supported = isSpeechSynthesisSupported();
     setHasSpeechSupport(supported);
 
     if (supported && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      // Chrome/Safari asynchronously loads voices
       const handleVoicesChanged = () => {
         window.speechSynthesis.getVoices();
       };
@@ -64,28 +76,43 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
     }
   }, []);
 
-  // Cancel speech synthesis when reading changes or unmounts
+  // Stop speech when chapter/reading changes or unmounts
   useEffect(() => {
     handleStopTTS();
     setCurrentChunkIndex(0);
     currentChunkRef.current = 0;
   }, [cleanText, src]);
 
-  // Chrome 14-second cutoff keepalive timer
+  // Setup Mobile Media Session for MP3 Background Playback
   useEffect(() => {
-    if (!isSpeaking || isPaused) return;
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator && hasMp3) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || 'Basic Christian Teachings',
+        artist: 'Zac Poonen',
+        album: 'Basic Christian Teachings',
+      });
 
-    const interval = setInterval(() => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
-          window.speechSynthesis.pause();
-          window.speechSynthesis.resume();
+      navigator.mediaSession.setActionHandler('play', () => {
+        audioRef.current?.play();
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        audioRef.current?.pause();
+      });
+      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - (details.seekOffset || 10));
         }
-      }
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [isSpeaking, isPaused]);
+      });
+      navigator.mediaSession.setActionHandler('seekforward', (details) => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = Math.min(
+            audioRef.current.duration || 0,
+            audioRef.current.currentTime + (details.seekOffset || 10)
+          );
+        }
+      });
+    }
+  }, [title, hasMp3]);
 
   if (!hasMp3 && !cleanText) {
     return null;
@@ -97,76 +124,80 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
     if (activeMode === 'mp3' && audioRef.current) {
       audioRef.current.playbackRate = rate;
     } else if (activeMode === 'tts' && isSpeaking) {
-      // Re-play current chunk with new speed
-      playChunk(currentChunkRef.current, rate);
+      startSpeechQueue(currentChunkRef.current, rate);
     }
   };
 
   const rates = [1, 1.25, 1.5, 2];
 
-  // Core TTS Playback for a specific chunk index
-  const playChunk = (index: number, rate = playbackRateRef.current) => {
+  /**
+   * Synchronous Queueing: Enqueues all utterances upfront in a single user click gesture.
+   * This is the official reliable pattern for iOS Safari and mobile Chrome.
+   */
+  const startSpeechQueue = (startIndex = 0, rate = playbackRateRef.current) => {
     if (!isSpeechSynthesisSupported() || chunks.length === 0) return;
 
-    if (index >= chunks.length) {
-      setIsSpeaking(false);
-      setIsPaused(false);
-      setCurrentChunkIndex(0);
-      currentChunkRef.current = 0;
-      return;
-    }
-
-    isCancelledRef.current = false;
-    currentChunkRef.current = index;
-    setCurrentChunkIndex(index);
-
-    // Cancel previous utterance
+    // Cancel existing speech
     window.speechSynthesis.cancel();
-
-    const chunkText = chunks[index];
-    const utterance = new SpeechSynthesisUtterance(chunkText);
-    utterance.rate = rate;
-    utterance.pitch = 1.0;
-    utterance.lang = 'en-US';
+    utteranceQueueRef.current = [];
 
     const voice = getBestEnglishVoice();
-    if (voice) {
-      utterance.voice = voice;
+    const queue: SpeechSynthesisUtterance[] = [];
+
+    const targetStart = Math.max(0, Math.min(startIndex, chunks.length - 1));
+    currentChunkRef.current = targetStart;
+    setCurrentChunkIndex(targetStart);
+
+    for (let i = targetStart; i < chunks.length; i++) {
+      const chunkText = chunks[i];
+      const utterance = new SpeechSynthesisUtterance(chunkText);
+      utterance.rate = rate;
+      utterance.pitch = 1.0;
+      utterance.lang = 'en-US';
+      if (voice) utterance.voice = voice;
+
+      const idx = i;
+
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        setIsPaused(false);
+        setCurrentChunkIndex(idx);
+        currentChunkRef.current = idx;
+      };
+
+      utterance.onend = () => {
+        if (idx === chunks.length - 1) {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          setCurrentChunkIndex(0);
+          currentChunkRef.current = 0;
+          utteranceQueueRef.current = [];
+        }
+      };
+
+      utterance.onerror = (e) => {
+        if (e.error === 'interrupted' || e.error === 'canceled') return;
+        console.warn('Speech chunk error at index', idx, e);
+        if (idx === chunks.length - 1) {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          utteranceQueueRef.current = [];
+        }
+      };
+
+      queue.push(utterance);
     }
 
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsPaused(false);
-    };
+    // Retain references on window & ref to prevent garbage collection destroying speech
+    utteranceQueueRef.current = queue;
+    (window as any).__utteranceQueue = queue;
 
-    utterance.onend = () => {
-      if (!isCancelledRef.current) {
-        setTimeout(() => {
-          if (!isCancelledRef.current) {
-            playChunk(index + 1, rate);
-          }
-        }, 40);
-      }
-    };
+    // Enqueue all utterances into native browser queue synchronously in click handler
+    for (const u of queue) {
+      window.speechSynthesis.speak(u);
+    }
 
-    utterance.onerror = (e) => {
-      if (e.error === 'interrupted' || e.error === 'canceled') return;
-      console.warn('Speech synthesis chunk error:', e);
-      if (!isCancelledRef.current && index + 1 < chunks.length) {
-        setTimeout(() => playChunk(index + 1, rate), 40);
-      } else {
-        setIsSpeaking(false);
-        setIsPaused(false);
-      }
-    };
-
-    // Store in window/ref to prevent garbage collection killing audio in Chrome/WebKit
-    activeUtteranceRef.current = utterance;
-    (window as any).__currentUtterance = utterance;
-
-    window.speechSynthesis.speak(utterance);
-
-    // iOS Safari / Chrome resume kick
+    // Kick resume for Safari / mobile browsers
     if (window.speechSynthesis.paused) {
       window.speechSynthesis.resume();
     }
@@ -175,19 +206,24 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
   // Toggle Play / Pause for TTS
   const handleTogglePlayPauseTTS = () => {
     if (!hasSpeechSupport) {
-      alert('Text-to-speech is not supported or permitted by your browser.');
+      alert('Text-to-speech is not supported or permitted on this device.');
       return;
     }
 
+    // Stop MP3 if playing
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+    }
+
     if (!isSpeaking) {
-      const startIdx = currentChunkRef.current >= chunks.length ? 0 : currentChunkRef.current;
-      playChunk(startIdx);
+      startSpeechQueue(currentChunkRef.current);
     } else if (isPaused) {
       window.speechSynthesis.resume();
       setIsPaused(false);
+      // Fallback resume check
       setTimeout(() => {
         if (typeof window !== 'undefined' && 'speechSynthesis' in window && !window.speechSynthesis.speaking) {
-          playChunk(currentChunkRef.current);
+          startSpeechQueue(currentChunkRef.current);
         }
       }, 150);
     } else {
@@ -198,10 +234,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
 
   // Stop TTS
   const handleStopTTS = () => {
-    isCancelledRef.current = true;
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    utteranceQueueRef.current = [];
+    (window as any).__utteranceQueue = null;
     setIsSpeaking(false);
     setIsPaused(false);
   };
@@ -209,24 +246,21 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
   // Skip to next chunk
   const handleNextChunk = () => {
     if (currentChunkRef.current + 1 < chunks.length) {
-      playChunk(currentChunkRef.current + 1);
+      startSpeechQueue(currentChunkRef.current + 1);
     }
   };
 
   // Skip to previous chunk
   const handlePrevChunk = () => {
-    if (currentChunkRef.current > 0) {
-      playChunk(currentChunkRef.current - 1);
-    } else {
-      playChunk(0);
-    }
+    const prev = Math.max(0, currentChunkRef.current - 1);
+    startSpeechQueue(prev);
   };
 
   const progressPercent = chunks.length > 0 ? Math.round(((currentChunkIndex + 1) / chunks.length) * 100) : 0;
 
   return (
     <div className="my-4 p-3.5 sm:p-4 rounded-3xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-800/60 shadow-sm space-y-3 transition-colors">
-      {/* Header Bar */}
+      {/* Top Header Bar */}
       <div className="flex items-center justify-between gap-2">
         {/* Dual Mode Switcher or Header Label */}
         {hasMp3 && cleanText ? (
@@ -268,7 +302,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
             </div>
             <div className="min-w-0">
               <span className="text-xs font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 block truncate">
-                {activeMode === 'mp3' ? 'Zac Poonen Audio Message' : 'Listen Aloud • Text-to-Speech'}
+                {activeMode === 'mp3' ? 'Zac Poonen Spoken Audio' : 'Listen Aloud • Text-to-Speech'}
               </span>
               {title && (
                 <p className="text-xs text-slate-600 dark:text-slate-400 truncate mt-0.5">
@@ -299,23 +333,39 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
         </div>
       </div>
 
-      {/* MP3 Player Mode */}
+      {/* Mode 1: MP3 Audio Recording by Zac Poonen */}
       {activeMode === 'mp3' && hasMp3 && (
         <div className="space-y-2.5 pt-1">
-          <audio
-            ref={audioRef}
-            src={src?.trim()}
-            controls
-            preload="metadata"
-            className="w-full h-10 rounded-xl focus:outline-none"
-            onRateChange={() => {
-              if (audioRef.current) {
-                setPlaybackRate(audioRef.current.playbackRate);
-              }
-            }}
-          >
-            Your browser does not support the audio element.
-          </audio>
+          <div className="relative">
+            <audio
+              ref={audioRef}
+              src={src?.trim()}
+              controls
+              preload="auto"
+              playsInline
+              className="w-full h-10 rounded-xl focus:outline-none"
+              onPlay={() => {
+                handleStopTTS();
+              }}
+              onWaiting={() => setIsMp3Buffering(true)}
+              onPlaying={() => setIsMp3Buffering(false)}
+              onCanPlay={() => setIsMp3Buffering(false)}
+              onRateChange={() => {
+                if (audioRef.current) {
+                  setPlaybackRate(audioRef.current.playbackRate);
+                }
+              }}
+            >
+              Your browser does not support the audio element.
+            </audio>
+
+            {isMp3Buffering && (
+              <div className="absolute right-12 top-2.5 flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-white/90 dark:bg-slate-900/90 px-2 py-0.5 rounded-md shadow-xs">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Buffering...</span>
+              </div>
+            )}
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
             {cleanText && (
@@ -323,12 +373,12 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
                 onClick={() => {
                   if (audioRef.current) audioRef.current.pause();
                   setActiveMode('tts');
-                  playChunk(0);
+                  startSpeechQueue(0);
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900/60 dark:hover:bg-indigo-900 text-indigo-700 dark:text-indigo-300 transition-all active:scale-95"
               >
                 <Volume2 className="w-3.5 h-3.5" />
-                <span>Listen Aloud (Read Text)</span>
+                <span>Listen Aloud (Read Written Text)</span>
               </button>
             )}
 
@@ -347,13 +397,13 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
         </div>
       )}
 
-      {/* TTS Speech Player Mode */}
+      {/* Mode 2: Listen Aloud (TTS Text-to-Speech) */}
       {activeMode === 'tts' && (
         <div className="space-y-3 pt-1">
-          {/* Main Controls */}
+          {/* Controls Bar */}
           <div className="flex flex-wrap items-center justify-between gap-2.5">
             <div className="flex items-center gap-2">
-              {/* Listen / Pause Button */}
+              {/* Play / Pause Button */}
               <button
                 onClick={handleTogglePlayPauseTTS}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white transition-all shadow-sm"
@@ -388,7 +438,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
                   <button
                     onClick={handlePrevChunk}
                     disabled={currentChunkIndex === 0}
-                    className="p-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 transition-all"
+                    className="p-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 transition-all active:scale-95"
                     title="Previous sentence"
                   >
                     <SkipBack className="w-3.5 h-3.5" />
@@ -396,7 +446,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
                   <button
                     onClick={handleNextChunk}
                     disabled={currentChunkIndex >= chunks.length - 1}
-                    className="p-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 transition-all"
+                    className="p-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 disabled:opacity-40 transition-all active:scale-95"
                     title="Next sentence"
                   >
                     <SkipForward className="w-3.5 h-3.5" />
@@ -411,11 +461,11 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
                 ? isPaused
                   ? 'Narration paused.'
                   : `Reading section ${currentChunkIndex + 1} of ${chunks.length} (${progressPercent}%)`
-                : 'Tap to have this reading narrated aloud with built-in voice.'}
+                : 'Tap to narrate this chapter continuously with device voice.'}
             </p>
           </div>
 
-          {/* Reading Progress Bar & Snippet when active */}
+          {/* Progress Bar & Current Sentence Quote */}
           {isSpeaking && (
             <div className="space-y-2 pt-1 border-t border-indigo-200/60 dark:border-indigo-900/60">
               <div className="w-full h-1.5 bg-indigo-200/70 dark:bg-indigo-950 rounded-full overflow-hidden">
@@ -426,14 +476,14 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
               </div>
 
               {chunks[currentChunkIndex] && (
-                <p className="text-xs text-slate-700 dark:text-slate-300 bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 line-clamp-2 italic font-serif">
+                <p className="text-xs text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-slate-900/80 p-2.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 line-clamp-3 italic font-serif leading-relaxed">
                   "{chunks[currentChunkIndex]}"
                 </p>
               )}
             </div>
           )}
 
-          {/* Switch back to MP3 if available */}
+          {/* Switch back to MP3 Recording */}
           {hasMp3 && (
             <div className="pt-1 flex justify-end">
               <button
@@ -444,7 +494,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, text, title, stud
                 className="inline-flex items-center gap-1.5 text-xs text-indigo-700 dark:text-indigo-400 hover:underline"
               >
                 <Music className="w-3.5 h-3.5" />
-                <span>Switch to Zac Poonen MP3 Recording</span>
+                <span>Switch to Zac Poonen Audio Recording</span>
               </button>
             </div>
           )}

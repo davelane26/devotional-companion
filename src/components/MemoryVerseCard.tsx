@@ -127,7 +127,8 @@ export const MemoryVerseCard: React.FC<MemoryVerseCardProps> = ({
                 ref={audioRef}
                 src={track.audioUrl}
                 controls
-                preload="none"
+                preload="auto"
+                playsInline
                 className="w-full h-10 rounded-xl focus:outline-none"
                 onRateChange={() => {
                   if (audioRef.current) {
@@ -159,3 +160,4 @@ export const MemoryVerseCard: React.FC<MemoryVerseCardProps> = ({
     </div>
   );
 };
+

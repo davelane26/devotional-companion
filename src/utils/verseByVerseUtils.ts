@@ -110,3 +110,4 @@ export function getZacPoonenVerseByVerseTrack(memoryVerseText: string): VerseByV
 
   return tracks[0];
 }
+
