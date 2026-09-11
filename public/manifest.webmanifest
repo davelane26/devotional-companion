@@ -1,0 +1,18 @@
+{
+  "name": "Daily Devotional Companion",
+  "short_name": "Devotional",
+  "description": "Distraction-free daily companion for Sermon Study Plans and Book Readings",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ]
+}
+

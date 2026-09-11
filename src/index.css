@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-primary: #f8fafc;
+    --text-primary: #0f172a;
+    --card-bg: #ffffff;
+    --border-color: #e2e8f0;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  }
+
+  /* Sepia Reading Theme */
+  body.theme-sepia {
+    --bg-primary: #f5efe1;
+    --text-primary: #3b2c1d;
+    --card-bg: #fdfbf7;
+    --border-color: #e3d7c3;
+    background-color: #f5efe1;
+    color: #3b2c1d;
+  }
+
+  body.theme-sepia .bg-white {
+    background-color: #fdfbf7 !important;
+  }
+
+  body.theme-sepia .bg-slate-50 {
+    background-color: #f8f3e8 !important;
+  }
+
+  body.theme-sepia .bg-slate-100 {
+    background-color: #ede2cf !important;
+  }
+
+  body.theme-sepia .bg-slate-200 {
+    background-color: #e3d3bd !important;
+  }
+
+  body.theme-sepia .border-slate-200,
+  body.theme-sepia .border-slate-300 {
+    border-color: #e3d7c3 !important;
+  }
+
+  body.theme-sepia .text-slate-800,
+  body.theme-sepia .text-slate-900 {
+    color: #2b1f14 !important;
+  }
+
+  body.theme-sepia .text-slate-700,
+  body.theme-sepia .text-slate-600 {
+    color: #4a3b2c !important;
+  }
+
+  body.theme-sepia .text-slate-500,
+  body.theme-sepia .text-slate-400 {
+    color: #7b6853 !important;
+  }
+
+  /* Dark Theme */
+  html.dark body {
+    --bg-primary: #0b0f19;
+    --text-primary: #f1f5f9;
+    --card-bg: #111827;
+    --border-color: #1f2937;
+    background-color: #0b0f19;
+    color: #f1f5f9;
+  }
+}
+
+/* Hide scrollbars for scrubber while preserving horizontal scroll */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
