@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Headphones, Quote, Sparkles, BookMarked } from 'lucide-react';
+import { ExternalLink, Headphones, Quote } from 'lucide-react';
 import { SermonPlanResponse, SermonDay, ReaderSettings } from '../types/devotional';
 import { DateScrubber, ScrubberItem } from './DateScrubber';
 import { ScriptureLink } from './ScriptureLink';
 import { ReflectionNotes } from './ReflectionNotes';
 import { SundayRestView } from './SundayRestView';
+import { MemoryVerseCard } from './MemoryVerseCard';
 import { getSermonDayDate, getTodayDateString, isDateInWeek } from '../utils/dateUtils';
 
 interface SermonViewProps {
@@ -15,7 +16,6 @@ interface SermonViewProps {
 export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const [isSundayView, setIsSundayView] = useState<boolean>(false);
-  const [showMemoryVerse, setShowMemoryVerse] = useState<boolean>(true);
 
   // Determine initial selected day based on today's date
   useEffect(() => {
@@ -92,54 +92,38 @@ export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
 
   return (
     <div className="space-y-6">
-      {/* Sermon Info & Memory Verse Header Card */}
-      <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent border border-amber-500/20 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-          <div>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-              Weekly Sermon Series • Week of {plan.week_of}
-            </span>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-              {plan.sermon_title}
-            </h2>
-          </div>
-
-          {plan.sermon_url && (
-            <a
-              href={plan.sermon_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 active:scale-95 transition-all shadow-sm shrink-0 self-start sm:self-auto"
-            >
-              <Headphones className="w-4 h-4" />
-              <span>Listen to Sermon</span>
-              <ExternalLink className="w-3 h-3 opacity-80" />
-            </a>
-          )}
+      {/* Sermon Info Header Card */}
+      <div className="p-4 sm:p-5 rounded-3xl bg-slate-100/70 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+            Weekly Sermon Series • Week of {plan.week_of}
+          </span>
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
+            {plan.sermon_title}
+          </h2>
         </div>
 
-        {/* Memory Verse Box */}
-        {plan.memory_verse && (
-          <div className="mt-3 p-3.5 rounded-2xl bg-amber-100/60 dark:bg-amber-950/40 border border-amber-300/60 dark:border-amber-800/40 text-amber-950 dark:text-amber-100">
-            <div className="flex items-center justify-between gap-2 mb-1.5">
-              <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
-                <BookMarked className="w-3.5 h-3.5" /> Memory Verse for the Week
-              </span>
-              <button
-                onClick={() => setShowMemoryVerse(!showMemoryVerse)}
-                className="text-[11px] font-medium opacity-70 hover:opacity-100 underline"
-              >
-                {showMemoryVerse ? 'Collapse' : 'Show'}
-              </button>
-            </div>
-            {showMemoryVerse && (
-              <p className="text-sm sm:text-base font-serif italic leading-relaxed pt-1">
-                {plan.memory_verse}
-              </p>
-            )}
-          </div>
+        {plan.sermon_url && (
+          <a
+            href={plan.sermon_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 active:scale-95 transition-all shadow-sm shrink-0 self-start sm:self-auto"
+          >
+            <Headphones className="w-4 h-4" />
+            <span>Listen to Sermon</span>
+            <ExternalLink className="w-3 h-3 opacity-80" />
+          </a>
         )}
       </div>
+
+      {/* Memory Verse Box with Zac Poonen Verse-by-Verse Exposition */}
+      {plan.memory_verse && (
+        <MemoryVerseCard
+          memoryVerse={plan.memory_verse}
+          bibleTranslation={settings.bibleTranslation}
+        />
+      )}
 
       {/* Date Scrubber */}
       <DateScrubber
@@ -219,29 +203,7 @@ export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
             </div>
           )}
 
-          {/* Related Scripture & Verse Reflection */}
-          {(currentDay.related_scripture || currentDay.verse_reflection) && (
-            <div className="p-4 sm:p-5 rounded-2xl bg-slate-100/80 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Scripture Reflection
-                </span>
-                {currentDay.related_scripture && (
-                  <ScriptureLink
-                    passage={currentDay.related_scripture}
-                    translation={settings.bibleTranslation}
-                    className="ml-auto"
-                  />
-                )}
-              </div>
-              <p className={`${fontFamilyClass} ${fontSizeClasses[settings.fontSize]} text-slate-700 dark:text-slate-300 font-medium`}>
-                {currentDay.verse_reflection}
-              </p>
-            </div>
-          )}
-
-          {/* Reflection Notes Auto-saving */}
+          {/* Personal Reflection Notes Auto-saving */}
           <ReflectionNotes
             noteId={`sermon_${plan.week_of}_${currentDay.day}`}
             type="sermon"
@@ -255,4 +217,3 @@ export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
     </div>
   );
 };
-
