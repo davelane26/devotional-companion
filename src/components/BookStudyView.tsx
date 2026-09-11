@@ -292,12 +292,17 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
           </div>
 
           {/* Audio Player (beneath chapter title) */}
-          {audioTracks.length > 0 && (
+          {audioTracks.length > 0 ? (
             <div className="space-y-3">
               {audioTracks.map((track, idx) => (
                 <AudioPlayer key={idx} src={track.src} title={track.title} />
               ))}
             </div>
+          ) : (
+            <AudioPlayer
+              text={currentReading.text}
+              title={chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined}
+            />
           )}
 
           {/* Reading Text Content */}
