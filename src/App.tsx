@@ -7,6 +7,7 @@ import { NavigationTabs, MobileBottomBar } from './components/NavigationTabs';
 import { SermonView } from './components/SermonView';
 import { BookStudyView } from './components/BookStudyView';
 import { JournalView } from './components/JournalView';
+import { QrCodeModal } from './components/QrCodeModal';
 import { ActiveTab } from './types/devotional';
 import { getTodayDateString } from './utils/dateUtils';
 
@@ -15,6 +16,7 @@ const STORAGE_INDEX_KEY = 'all_devotional_reflection_notes_index';
 export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('sermon');
   const [notesCount, setNotesCount] = useState<number>(0);
+  const [showQrModal, setShowQrModal] = useState<boolean>(false);
   const currentDateStr = getTodayDateString();
 
   const {
@@ -31,6 +33,7 @@ export const App: React.FC = () => {
     setTheme,
     setFontSize,
     setFontFamily,
+    setBibleTranslation,
   } = useReaderSettings();
 
   // Update notes count
@@ -71,6 +74,8 @@ export const App: React.FC = () => {
         onThemeChange={setTheme}
         onFontSizeChange={setFontSize}
         onFontFamilyChange={setFontFamily}
+        onBibleTranslationChange={setBibleTranslation}
+        onShowQrCode={() => setShowQrModal(true)}
       />
 
       {/* Main Content Area */}
@@ -133,6 +138,12 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         notesCount={notesCount}
+      />
+
+      {/* QR Code Scan Modal */}
+      <QrCodeModal
+        isOpen={showQrModal}
+        onClose={() => setShowQrModal(false)}
       />
     </div>
   );

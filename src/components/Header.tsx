@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, WifiOff, RotateCw } from 'lucide-react';
+import { SlidersHorizontal, WifiOff, RotateCw, QrCode } from 'lucide-react';
 import { ReaderControls } from './ReaderControls';
-import { ReaderSettings, ReaderTheme, ReaderFontSize } from '../types/devotional';
+import { ReaderSettings, ReaderTheme, ReaderFontSize, BibleTranslation } from '../types/devotional';
 import { formatReadableDate, isToday } from '../utils/dateUtils';
 
 interface HeaderProps {
@@ -13,6 +13,8 @@ interface HeaderProps {
   onThemeChange: (theme: ReaderTheme) => void;
   onFontSizeChange: (size: ReaderFontSize) => void;
   onFontFamilyChange: (font: 'serif' | 'sans') => void;
+  onBibleTranslationChange: (translation: BibleTranslation) => void;
+  onShowQrCode: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,6 +26,8 @@ export const Header: React.FC<HeaderProps> = ({
   onThemeChange,
   onFontSizeChange,
   onFontFamilyChange,
+  onBibleTranslationChange,
+  onShowQrCode,
 }) => {
   const [showControls, setShowControls] = useState(false);
   const viewingToday = isToday(currentDateStr);
@@ -61,6 +65,15 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
+          {/* QR Code Button for Phone */}
+          <button
+            onClick={onShowQrCode}
+            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
+            title="Scan QR code on phone"
+          >
+            <QrCode className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          </button>
+
           <button
             onClick={onRefresh}
             disabled={isLoading}
@@ -77,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
                 ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
-            title="Reading display settings (font size, theme)"
+            title="Reading settings (font size, theme, Bible translation)"
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span className="hidden sm:inline">Appearance</span>
@@ -93,10 +106,11 @@ export const Header: React.FC<HeaderProps> = ({
             onThemeChange={onThemeChange}
             onFontSizeChange={onFontSizeChange}
             onFontFamilyChange={onFontFamilyChange}
+            onBibleTranslationChange={onBibleTranslationChange}
+            onShowQrCode={onShowQrCode}
           />
         </div>
       )}
     </header>
   );
 };
-

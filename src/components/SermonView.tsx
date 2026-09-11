@@ -183,11 +183,15 @@ export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
           {currentDay.passages && currentDay.passages.length > 0 && (
             <div className="space-y-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
-                Passages to Read Today:
+                Passages to Read Today ({settings.bibleTranslation}):
               </span>
               <div className="flex flex-wrap gap-2">
                 {currentDay.passages.map((passage, idx) => (
-                  <ScriptureLink key={idx} passage={passage} />
+                  <ScriptureLink
+                    key={idx}
+                    passage={passage}
+                    translation={settings.bibleTranslation}
+                  />
                 ))}
               </div>
             </div>
@@ -224,7 +228,11 @@ export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
                   Scripture Reflection
                 </span>
                 {currentDay.related_scripture && (
-                  <ScriptureLink passage={currentDay.related_scripture} className="ml-auto" />
+                  <ScriptureLink
+                    passage={currentDay.related_scripture}
+                    translation={settings.bibleTranslation}
+                    className="ml-auto"
+                  />
                 )}
               </div>
               <p className={`${fontFamilyClass} ${fontSizeClasses[settings.fontSize]} text-slate-700 dark:text-slate-300 font-medium`}>

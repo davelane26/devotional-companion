@@ -1,12 +1,15 @@
 import React from 'react';
-import { Sun, Moon, Book, Type } from 'lucide-react';
-import { ReaderSettings, ReaderTheme, ReaderFontSize } from '../types/devotional';
+import { Sun, Moon, Book, Type, BookOpen, QrCode } from 'lucide-react';
+import { ReaderSettings, ReaderTheme, ReaderFontSize, BibleTranslation } from '../types/devotional';
+import { BIBLE_TRANSLATIONS } from '../utils/scriptureUtils';
 
 interface ReaderControlsProps {
   settings: ReaderSettings;
   onThemeChange: (theme: ReaderTheme) => void;
   onFontSizeChange: (size: ReaderFontSize) => void;
   onFontFamilyChange: (font: 'serif' | 'sans') => void;
+  onBibleTranslationChange: (translation: BibleTranslation) => void;
+  onShowQrCode?: () => void;
   compact?: boolean;
 }
 
@@ -15,6 +18,8 @@ export const ReaderControls: React.FC<ReaderControlsProps> = ({
   onThemeChange,
   onFontSizeChange,
   onFontFamilyChange,
+  onBibleTranslationChange,
+  onShowQrCode,
   compact = false,
 }) => {
   const fontSizes: { label: string; value: ReaderFontSize; sample: string }[] = [
@@ -164,7 +169,54 @@ export const ReaderControls: React.FC<ReaderControlsProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Bible Translation Switcher */}
+      <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
+          <span className="flex items-center gap-1.5">
+            <BookOpen className="w-3.5 h-3.5 text-amber-500" />
+            Bible Translation (Scripture Links)
+          </span>
+          <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400">
+            {settings.bibleTranslation}
+          </span>
+        </label>
+        <div className="grid grid-cols-3 gap-2">
+          {BIBLE_TRANSLATIONS.map((t) => {
+            const isSelected = settings.bibleTranslation === t.code;
+            return (
+              <button
+                key={t.code}
+                onClick={() => onBibleTranslationChange(t.code)}
+                className={`py-2 px-2 rounded-xl border text-xs font-medium transition-all text-center ${
+                  isSelected
+                    ? 'bg-amber-500 text-white border-amber-600 shadow-sm font-bold'
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                }`}
+                title={t.name}
+              >
+                <div className="font-bold">{t.label}</div>
+                <div className={`text-[9px] truncate mt-0.5 ${isSelected ? 'text-amber-100' : 'text-slate-400'}`}>
+                  {t.code === 'NASB1995' ? 'Standard' : t.name.split(' ')[0]}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Share / QR Code Option */}
+      {onShowQrCode && (
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+          <button
+            onClick={onShowQrCode}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400 hover:underline"
+          >
+            <QrCode className="w-3.5 h-3.5" />
+            <span>Show QR Code for Phone</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };
-

@@ -1,11 +1,12 @@
 import { useEffect } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { ReaderSettings, ReaderTheme, ReaderFontSize } from '../types/devotional';
+import { ReaderSettings, ReaderTheme, ReaderFontSize, BibleTranslation } from '../types/devotional';
 
 const DEFAULT_SETTINGS: ReaderSettings = {
   theme: 'light',
   fontSize: 'base',
   fontFamily: 'serif',
+  bibleTranslation: 'NASB1995',
 };
 
 export function useReaderSettings() {
@@ -21,6 +22,10 @@ export function useReaderSettings() {
 
   const setFontFamily = (fontFamily: 'serif' | 'sans') => {
     setSettings((prev) => ({ ...prev, fontFamily }));
+  };
+
+  const setBibleTranslation = (bibleTranslation: BibleTranslation) => {
+    setSettings((prev) => ({ ...prev, bibleTranslation }));
   };
 
   // Sync theme classes on document and body
@@ -40,11 +45,18 @@ export function useReaderSettings() {
     }
   }, [settings.theme]);
 
+  // Ensure bibleTranslation exists if migrating from older local storage
+  const effectiveSettings: ReaderSettings = {
+    ...settings,
+    bibleTranslation: settings.bibleTranslation || 'NASB1995',
+  };
+
   return {
-    settings,
+    settings: effectiveSettings,
     setTheme,
     setFontSize,
     setFontFamily,
+    setBibleTranslation,
   };
 }
 
