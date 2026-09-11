@@ -57,3 +57,4 @@ if (getSermonDayDate(weekOf, 'Thursday') === '2026-09-10') {
 } else {
   console.error('FAIL');
 }
+

@@ -107,3 +107,4 @@ npm run preview
 ├── vite.config.ts               # Vite build configuration
 └── tsconfig.json                # TypeScript configuration
 ```
+

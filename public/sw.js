@@ -1,9 +1,9 @@
 const CACHE_NAME = 'devotional-cache-v1';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/favicon.svg',
-  '/manifest.webmanifest'
+  './',
+  './index.html',
+  './favicon.svg',
+  './manifest.webmanifest'
 ];
 
 const API_ENDPOINTS = [
