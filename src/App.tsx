@@ -62,6 +62,12 @@ export const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Today's companion Book Study chapter (for guided flow from sermon reading)
+  const todayBookItem = bookStudy?.schedule[currentDateStr];
+  const todayBookChapter = todayBookItem?.chapters?.[0]
+    ? { number: todayBookItem.chapters[0].number, title: todayBookItem.chapters[0].title }
+    : undefined;
+
   return (
     <div className="min-h-screen flex flex-col selection:bg-amber-200 dark:selection:bg-amber-900 transition-colors duration-200">
       {/* App Header */}
@@ -119,7 +125,15 @@ export const App: React.FC = () => {
 
         {/* Sermon Plan View */}
         {activeTab === 'sermon' && sermonPlan && (
-          <SermonView plan={sermonPlan} settings={settings} />
+          <SermonView
+            plan={sermonPlan}
+            settings={settings}
+            todayBookChapter={todayBookChapter}
+            onNavigateToBookStudy={() => {
+              setActiveTab('book');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
         )}
 
         {/* Book Study View */}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SlidersHorizontal, WifiOff, RotateCw, QrCode } from 'lucide-react';
+import { SlidersHorizontal, WifiOff, RotateCw } from 'lucide-react';
 import { ReaderControls } from './ReaderControls';
 import { ReaderSettings, ReaderTheme, ReaderFontSize, BibleTranslation } from '../types/devotional';
 import { formatReadableDate, isToday } from '../utils/dateUtils';
@@ -64,15 +64,6 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="hidden xs:inline">Offline</span>
             </div>
           )}
-
-          {/* QR Code Button for Phone */}
-          <button
-            onClick={onShowQrCode}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95 border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
-            title="Scan QR code on phone"
-          >
-            <QrCode className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-          </button>
 
           <button
             onClick={onRefresh}

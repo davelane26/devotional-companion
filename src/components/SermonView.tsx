@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, Headphones, Quote } from 'lucide-react';
+import { ExternalLink, Headphones, Quote, ArrowRight, BookOpen } from 'lucide-react';
 import { SermonPlanResponse, SermonDay, ReaderSettings } from '../types/devotional';
 import { DateScrubber, ScrubberItem } from './DateScrubber';
 import { ScriptureLink } from './ScriptureLink';
@@ -11,9 +11,16 @@ import { getSermonDayDate, getTodayDateString, isDateInWeek } from '../utils/dat
 interface SermonViewProps {
   plan: SermonPlanResponse;
   settings: ReaderSettings;
+  onNavigateToBookStudy?: () => void;
+  todayBookChapter?: { number: number; title: string };
 }
 
-export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
+export const SermonView: React.FC<SermonViewProps> = ({
+  plan,
+  settings,
+  onNavigateToBookStudy,
+  todayBookChapter,
+}) => {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(0);
   const [isSundayView, setIsSundayView] = useState<boolean>(false);
 
@@ -212,6 +219,43 @@ export const SermonView: React.FC<SermonViewProps> = ({ plan, settings }) => {
             subtitle={`Sermon: ${plan.sermon_title}`}
             placeholder="Write your reflections on this message and scripture, or personal prayer points..."
           />
+
+          {/* Guided Next Step: Book Study */}
+          {onNavigateToBookStudy && (
+            <div className="pt-2">
+              <button
+                onClick={onNavigateToBookStudy}
+                className="w-full p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 via-amber-500/10 to-indigo-500/10 border border-indigo-500/20 hover:border-indigo-500/40 dark:border-indigo-500/30 dark:hover:border-indigo-500/50 transition-all flex items-center justify-between group text-left shadow-xs hover:shadow-sm"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 block">
+                      Next in Today's Flow
+                    </span>
+                    <div className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                      <span>Continue to Book Study</span>
+                      {todayBookChapter && (
+                        <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                          (Ch. {todayBookChapter.number})
+                        </span>
+                      )}
+                    </div>
+                    {todayBookChapter?.title && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">
+                        {todayBookChapter.title}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="p-2 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs group-hover:translate-x-1 transition-transform shrink-0 ml-2">
+                  <ArrowRight className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+              </button>
+            </div>
+          )}
         </article>
       ) : null}
     </div>
