@@ -1,11 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { BookOpen, ExternalLink, CheckCircle2, ChevronDown, ListFilter } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import {
+  BookOpen,
+  ExternalLink,
+  CheckCircle2,
+  ChevronDown,
+  ListFilter,
+  Headphones,
+  Volume2,
+  Play,
+} from 'lucide-react';
 import { BookStudyResponse, ReaderSettings } from '../types/devotional';
 import { DateScrubber, ScrubberItem } from './DateScrubber';
 import { ReflectionNotes } from './ReflectionNotes';
 import { AudioPlayer } from './AudioPlayer';
 import { getTodayDateString, formatReadableDate } from '../utils/dateUtils';
-import { getBasicChristianTeachingsAudio } from '../utils/speechUtils';
+import {
+  getBasicChristianTeachingsAudio,
+  calculateParagraphWeights,
+  getActiveParagraphIndex,
+  getParagraphStartTime,
+} from '../utils/bookAudioUtils';
 
 interface BookStudyViewProps {
   bookData: BookStudyResponse;
@@ -15,7 +29,7 @@ interface BookStudyViewProps {
 export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings }) => {
   const dates = useMemo(() => Object.keys(bookData.schedule).sort(), [bookData.schedule]);
 
-  // Determine initial selected date: Today if available, otherwise first date
+  // Selected date
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = getTodayDateString();
     return bookData.schedule[today] ? today : dates[0] || '';
@@ -30,6 +44,23 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
       return [];
     }
   });
+
+  // Audio & Follow-along state
+  const [audioCurrentTime, setAudioCurrentTime] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const [seekTarget, setSeekTarget] = useState<{ time: number; timestamp: number } | null>(null);
+
+  const paragraphRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Reset audio times when date changes
+  useEffect(() => {
+    setAudioCurrentTime(0);
+    setAudioDuration(0);
+    setIsAudioPlaying(false);
+    setSeekTarget(null);
+  }, [selectedDate]);
 
   // Check if today matches or when dates change
   useEffect(() => {
@@ -57,7 +88,7 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
   const isCurrentCompleted = completedDates.includes(selectedDate);
   const currentReading = bookData.schedule[selectedDate];
 
-  // Prepare a sliding window of dates for the scrubber around the selected date
+  // Prepare scrubber items
   const scrubberItems: ScrubberItem[] = useMemo(() => {
     const currentIndex = dates.indexOf(selectedDate);
     const windowSize = 7;
@@ -79,25 +110,24 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
       return {
         key: dateStr,
         dateStr,
-        label: '', // will be populated from date display
+        label: '',
         subLabel: chNum ? `Ch. ${chNum}` : undefined,
         hasNote,
       };
     });
   }, [dates, selectedDate, bookData.schedule]);
 
-  // Handle jump to today
+  // Jump to today
   const handleJumpToday = () => {
     const today = getTodayDateString();
     if (bookData.schedule[today]) {
       setSelectedDate(today);
     } else {
-      // Find closest date
       setSelectedDate(dates[0]);
     }
   };
 
-  // Font size and family styling
+  // Font styling
   const fontSizeClasses = {
     sm: 'text-sm leading-relaxed',
     base: 'text-base leading-relaxed sm:text-lg sm:leading-relaxed',
@@ -118,6 +148,42 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
 
   const chapterTitle = currentReading?.chapters?.[0]?.title;
   const chapterNumber = currentReading?.chapters?.[0]?.number;
+
+  // Compute paragraph weights for real-time sync with Zac's audio
+  const paragraphWeights = useMemo(() => calculateParagraphWeights(paragraphs), [paragraphs]);
+
+  // Active paragraph index matching audio time
+  const activeParagraphIndex = useMemo(
+    () => getActiveParagraphIndex(audioCurrentTime, audioDuration, paragraphWeights),
+    [audioCurrentTime, audioDuration, paragraphWeights]
+  );
+
+  // Auto-scroll to active paragraph if enabled
+  useEffect(() => {
+    if (autoScroll && isAudioPlaying && activeParagraphIndex >= 0) {
+      const el = paragraphRefs.current[activeParagraphIndex];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [activeParagraphIndex, autoScroll, isAudioPlaying]);
+
+  // Jump Zac audio to specific paragraph
+  const handleJumpToParagraph = (index: number) => {
+    if (!audioDuration || audioDuration <= 0) return;
+    const targetTime = getParagraphStartTime(index, audioDuration, paragraphWeights);
+    setSeekTarget({ time: targetTime, timestamp: Date.now() });
+  };
+
+  // Scroll to active paragraph manually
+  const handleScrollToActiveParagraph = () => {
+    if (activeParagraphIndex >= 0) {
+      const el = paragraphRefs.current[activeParagraphIndex];
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  };
 
   // Resolve audio tracks for current reading
   const audioTracks = useMemo(() => {
@@ -141,7 +207,7 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
       });
     }
 
-    // 2. If no chapter-level audio, check schedule item-level fields
+    // 2. Schedule item level fields
     if (tracks.length === 0) {
       const src =
         currentReading.audio_url ||
@@ -304,22 +370,86 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
             </button>
           </div>
 
-          {/* Audio Player (beneath chapter title) */}
-          <AudioPlayer
-            src={audioTracks[0]?.src}
-            text={currentReading.text}
-            title={chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined}
-            studyUrl={audioTracks[0]?.studyUrl}
-          />
+          {/* Zac Poonen Follow-Along Audio Player */}
+          {audioTracks[0]?.src && (
+            <AudioPlayer
+              src={audioTracks[0].src}
+              title={chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined}
+              studyUrl={audioTracks[0].studyUrl}
+              activeParagraphIndex={activeParagraphIndex}
+              totalParagraphs={paragraphs.length}
+              onTimeUpdate={(cur, dur) => {
+                setAudioCurrentTime(cur);
+                setAudioDuration(dur);
+              }}
+              onPlayingChange={setIsAudioPlaying}
+              seekTarget={seekTarget}
+              onJumpToActiveParagraph={handleScrollToActiveParagraph}
+              autoScroll={autoScroll}
+              onToggleAutoScroll={() => setAutoScroll(!autoScroll)}
+            />
+          )}
 
-          {/* Reading Text Content */}
-          <div className={`space-y-5 text-slate-800 dark:text-slate-200 ${fontFamilyClass} ${fontSizeClasses[settings.fontSize]}`}>
-            {paragraphs.map((p, idx) => (
-              <p key={idx} className="leading-relaxed">
-                {p}
-              </p>
-            ))}
+          {/* Follow-Along Reading Text Content with Paragraph Highlighting */}
+          <div className={`space-y-4 text-slate-800 dark:text-slate-200 ${fontFamilyClass} ${fontSizeClasses[settings.fontSize]}`}>
+            {paragraphs.map((p, idx) => {
+              const isActive = isAudioPlaying && activeParagraphIndex === idx;
+              return (
+                <div
+                  key={idx}
+                  ref={(el) => {
+                    paragraphRefs.current[idx] = el;
+                  }}
+                  onClick={() => handleJumpToParagraph(idx)}
+                  className={`relative group p-3.5 sm:p-4 rounded-2xl transition-all duration-300 cursor-pointer ${
+                    isActive
+                      ? 'border-l-4 border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/40 shadow-xs'
+                      : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/40 border-l-4 border-transparent'
+                  }`}
+                  title="Click to jump Zac's audio to this paragraph"
+                >
+                  {/* Active Speaking Indicator */}
+                  {isActive && (
+                    <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-indigo-200/60 dark:border-indigo-900/60 animate-in fade-in duration-200">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+                        <Volume2 className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                        <span>Zac is speaking here • Paragraph {idx + 1} of {paragraphs.length}</span>
+                      </span>
+                      <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-full">
+                        Reading Sync Active
+                      </span>
+                    </div>
+                  )}
+
+                  <p className="leading-relaxed">
+                    {p}
+                  </p>
+
+                  {/* Hover / Tap Hint */}
+                  {!isActive && (
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2 flex justify-end">
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100/80 dark:bg-indigo-900/60 px-2.5 py-0.5 rounded-full">
+                        <Play className="w-2.5 h-2.5 fill-current" />
+                        <span>Listen to this section</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          {/* Floating "Follow Zac" button if scrolled away while playing */}
+          {isAudioPlaying && activeParagraphIndex >= 0 && (
+            <button
+              onClick={handleScrollToActiveParagraph}
+              className="fixed bottom-20 right-4 sm:right-8 z-30 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xl active:scale-95 transition-all animate-in fade-in slide-in-from-bottom-2"
+              title="Jump to where Zac is currently speaking"
+            >
+              <Headphones className="w-4 h-4 animate-pulse" />
+              <span>Follow Zac (Para {activeParagraphIndex + 1})</span>
+            </button>
+          )}
 
           {/* Attribution Footer */}
           {bookData.attribution_footer && (
@@ -346,4 +476,3 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
     </div>
   );
 };
-
