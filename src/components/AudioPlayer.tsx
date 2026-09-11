@@ -9,6 +9,7 @@ import {
   ExternalLink,
   Loader2,
   BookOpen,
+  Headphones,
 } from 'lucide-react';
 import { formatTime } from '../utils/bookAudioUtils';
 
@@ -16,6 +17,15 @@ interface AudioPlayerProps {
   src?: string | null;
   title?: string;
   studyUrl?: string | null;
+  initialTime?: number;
+  tracks?: {
+    chapterNumber: number;
+    chapterTitle: string;
+    audioUrl: string;
+    startOffsetSec?: number;
+  }[];
+  activeTrackIndex?: number;
+  onSelectTrack?: (index: number) => void;
   activeParagraphIndex?: number;
   totalParagraphs?: number;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
@@ -30,6 +40,10 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   src,
   title,
   studyUrl,
+  initialTime = 0,
+  tracks,
+  activeTrackIndex = 0,
+  onSelectTrack,
   activeParagraphIndex = 0,
   totalParagraphs = 0,
   onTimeUpdate,
@@ -42,10 +56,33 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [currentTime, setCurrentTime] = useState(initialTime || 0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isBuffering, setIsBuffering] = useState(false);
+
+  // Reset audio playback and seek to initialTime whenever src changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      const start = initialTime || 0;
+      audioRef.current.currentTime = start;
+      setCurrentTime(start);
+    }
+    setIsPlaying(false);
+    setDuration(0);
+    setIsBuffering(false);
+    if (onPlayingChange) onPlayingChange(false);
+  }, [src, initialTime]);
+
+  // Clean up and pause audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
+    };
+  }, []);
 
   // Handle external seek requests (e.g. user clicked a paragraph to jump)
   useEffect(() => {
@@ -160,11 +197,45 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => setIsBuffering(false)}
         onCanPlay={() => setIsBuffering(false)}
+        onLoadedMetadata={() => {
+          if (audioRef.current) {
+            const dur = audioRef.current.duration || 0;
+            setDuration(dur);
+            if (initialTime && initialTime > 0 && initialTime < dur && audioRef.current.currentTime < 1) {
+              audioRef.current.currentTime = initialTime;
+              setCurrentTime(initialTime);
+              if (onTimeUpdate) onTimeUpdate(initialTime, dur);
+            }
+          }
+        }}
         onError={(e) => {
           console.warn('MP3 playback error:', e);
           setIsBuffering(false);
         }}
       />
+
+      {/* Multi-Track Chapter Tabs (if day covers more than 1 chapter) */}
+      {tracks && tracks.length > 1 && (
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-indigo-100/70 dark:bg-indigo-900/40 border border-indigo-200/60 dark:border-indigo-800/60 overflow-x-auto">
+          {tracks.map((t, idx) => {
+            const isSelected = activeTrackIndex === idx;
+            return (
+              <button
+                key={idx}
+                onClick={() => onSelectTrack && onSelectTrack(idx)}
+                className={`flex-1 min-w-[140px] px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+                  isSelected
+                    ? 'bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 shadow-xs ring-1 ring-indigo-500/30'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <Headphones className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
+                <span className="truncate">Ch. {t.chapterNumber}: {t.chapterTitle}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Header Bar */}
       <div className="flex items-center justify-between gap-2">

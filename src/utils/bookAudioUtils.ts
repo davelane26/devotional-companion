@@ -1,6 +1,70 @@
+import {
+  BOOK_AUDIO_SCHEDULE_MAP,
+  DayAudioSchedule,
+  ChapterAudioTrack,
+} from '../data/bookAudioScheduleMap';
+
+export type { DayAudioSchedule, ChapterAudioTrack };
+
 /**
- * Audio and Follow-Along utilities for Zac Poonen's Book Study teachings.
+ * Returns the precomputed audio schedule metadata for a given date.
  */
+export function getDayAudioSchedule(dateStr: string): DayAudioSchedule | null {
+  return BOOK_AUDIO_SCHEDULE_MAP[dateStr] || null;
+}
+
+/**
+ * Resolves which paragraph is currently being spoken based on the track's precomputed timestamps.
+ */
+export function getActiveParagraphForTrack(
+  currentTime: number,
+  track: ChapterAudioTrack
+): number {
+  if (!track || !track.paragraphStartTimes || track.paragraphStartTimes.length === 0) {
+    return -1;
+  }
+
+  const { paragraphIndices, paragraphStartTimes } = track;
+  
+  if (currentTime < paragraphStartTimes[0]) {
+    return paragraphIndices[0];
+  }
+
+  for (let i = paragraphStartTimes.length - 1; i >= 0; i--) {
+    if (currentTime >= paragraphStartTimes[i]) {
+      return paragraphIndices[i];
+    }
+  }
+
+  return paragraphIndices[0];
+}
+
+/**
+ * Given a paragraph index tapped by the user, returns the matching track index and seek time.
+ */
+export function getParagraphAudioSeek(
+  paragraphIndex: number,
+  daySchedule: DayAudioSchedule | null
+): { trackIndex: number; seekTime: number; chapterTitle: string } | null {
+  if (!daySchedule || !daySchedule.tracks || daySchedule.tracks.length === 0) {
+    return null;
+  }
+
+  for (let tIdx = 0; tIdx < daySchedule.tracks.length; tIdx++) {
+    const track = daySchedule.tracks[tIdx];
+    const pos = track.paragraphIndices.indexOf(paragraphIndex);
+    if (pos !== -1) {
+      const seekTime = track.paragraphStartTimes[pos] ?? track.startOffsetSec;
+      return {
+        trackIndex: tIdx,
+        seekTime,
+        chapterTitle: track.chapterTitle,
+      };
+    }
+  }
+
+  return null;
+}
 
 /**
  * Resolves the official CFC India MP3 and study URL for a given Basic Christian Teachings chapter.

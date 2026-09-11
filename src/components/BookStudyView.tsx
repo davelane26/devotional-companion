@@ -15,10 +15,9 @@ import { ReflectionNotes } from './ReflectionNotes';
 import { AudioPlayer } from './AudioPlayer';
 import { getTodayDateString, formatReadableDate } from '../utils/dateUtils';
 import {
-  getBasicChristianTeachingsAudio,
-  calculateParagraphWeights,
-  getActiveParagraphIndex,
-  getParagraphStartTime,
+  getDayAudioSchedule,
+  getActiveParagraphForTrack,
+  getParagraphAudioSeek,
 } from '../utils/bookAudioUtils';
 
 interface BookStudyViewProps {
@@ -46,18 +45,18 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
   });
 
   // Audio & Follow-along state
+  const [activeTrackIndex, setActiveTrackIndex] = useState(0);
   const [audioCurrentTime, setAudioCurrentTime] = useState(0);
-  const [audioDuration, setAudioDuration] = useState(0);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const [seekTarget, setSeekTarget] = useState<{ time: number; timestamp: number } | null>(null);
 
   const paragraphRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Reset audio times when date changes
+  // Reset all audio state and active track when date changes
   useEffect(() => {
+    setActiveTrackIndex(0);
     setAudioCurrentTime(0);
-    setAudioDuration(0);
     setIsAudioPlaying(false);
     setSeekTarget(null);
   }, [selectedDate]);
@@ -146,17 +145,25 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
       .filter((p) => p.length > 0);
   }, [currentReading?.text]);
 
-  const chapterTitle = currentReading?.chapters?.[0]?.title;
-  const chapterNumber = currentReading?.chapters?.[0]?.number;
+  // Schedule metadata for audio tracks and paragraph timestamps
+  const daySchedule = useMemo(() => getDayAudioSchedule(selectedDate), [selectedDate]);
 
-  // Compute paragraph weights for real-time sync with Zac's audio
-  const paragraphWeights = useMemo(() => calculateParagraphWeights(paragraphs), [paragraphs]);
+  // Current active chapter track
+  const currentTrack = useMemo(() => {
+    if (!daySchedule || !daySchedule.tracks || daySchedule.tracks.length === 0) return null;
+    return daySchedule.tracks[activeTrackIndex] || daySchedule.tracks[0];
+  }, [daySchedule, activeTrackIndex]);
 
-  // Active paragraph index matching audio time
-  const activeParagraphIndex = useMemo(
-    () => getActiveParagraphIndex(audioCurrentTime, audioDuration, paragraphWeights),
-    [audioCurrentTime, audioDuration, paragraphWeights]
-  );
+  const chapterTitle = currentTrack?.chapterTitle || currentReading?.chapters?.[0]?.title;
+  const chapterNumber = currentTrack?.chapterNumber || currentReading?.chapters?.[0]?.number;
+
+  // Active paragraph index matching current audio time
+  const activeParagraphIndex = useMemo(() => {
+    if (currentTrack) {
+      return getActiveParagraphForTrack(audioCurrentTime, currentTrack);
+    }
+    return -1;
+  }, [audioCurrentTime, currentTrack]);
 
   // Auto-scroll to active paragraph if enabled
   useEffect(() => {
@@ -170,9 +177,13 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
 
   // Jump Zac audio to specific paragraph
   const handleJumpToParagraph = (index: number) => {
-    if (!audioDuration || audioDuration <= 0) return;
-    const targetTime = getParagraphStartTime(index, audioDuration, paragraphWeights);
-    setSeekTarget({ time: targetTime, timestamp: Date.now() });
+    const seekInfo = getParagraphAudioSeek(index, daySchedule);
+    if (seekInfo) {
+      if (seekInfo.trackIndex !== activeTrackIndex) {
+        setActiveTrackIndex(seekInfo.trackIndex);
+      }
+      setSeekTarget({ time: seekInfo.seekTime, timestamp: Date.now() });
+    }
   };
 
   // Scroll to active paragraph manually
@@ -184,60 +195,6 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
       }
     }
   };
-
-  // Resolve audio tracks for current reading
-  const audioTracks = useMemo(() => {
-    if (!currentReading) return [];
-    const tracks: { title?: string; src: string; studyUrl?: string }[] = [];
-
-    // 1. Check chapter level fields
-    if (currentReading.chapters && currentReading.chapters.length > 0) {
-      currentReading.chapters.forEach((ch) => {
-        const src =
-          ch.audio_url ||
-          ch.mp3 ||
-          ch.audio ||
-          (ch.url && (ch.url.endsWith('.mp3') || ch.url.includes('/audio/')) ? ch.url : undefined);
-        if (src && src.trim()) {
-          tracks.push({
-            title: `Chapter ${ch.number}: ${ch.title}`,
-            src: src.trim(),
-          });
-        }
-      });
-    }
-
-    // 2. Schedule item level fields
-    if (tracks.length === 0) {
-      const src =
-        currentReading.audio_url ||
-        currentReading.mp3 ||
-        currentReading.audio ||
-        (currentReading.url && (currentReading.url.endsWith('.mp3') || currentReading.url.includes('/audio/'))
-          ? currentReading.url
-          : undefined);
-      if (src && src.trim()) {
-        tracks.push({
-          title: chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined,
-          src: src.trim(),
-        });
-      }
-    }
-
-    // 3. Fallback: resolve CFC India audio for Basic Christian Teachings
-    if (tracks.length === 0 && chapterNumber && chapterTitle) {
-      const bctAudio = getBasicChristianTeachingsAudio(chapterNumber, chapterTitle);
-      if (bctAudio) {
-        tracks.push({
-          title: `Chapter ${chapterNumber}: ${chapterTitle}`,
-          src: bctAudio.audioUrl,
-          studyUrl: bctAudio.studyUrl,
-        });
-      }
-    }
-
-    return tracks;
-  }, [currentReading, chapterTitle, chapterNumber]);
 
   return (
     <div className="space-y-5">
@@ -364,16 +321,26 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
           </div>
 
           {/* Zac Poonen Follow-Along Audio Player */}
-          {audioTracks[0]?.src && (
+          {currentTrack?.audioUrl && (
             <AudioPlayer
-              src={audioTracks[0].src}
-              title={chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined}
-              studyUrl={audioTracks[0].studyUrl}
+              key={`${selectedDate}-${currentTrack.audioUrl}-${activeTrackIndex}`}
+              src={currentTrack.audioUrl}
+              title={`Chapter ${currentTrack.chapterNumber}: ${currentTrack.chapterTitle}`}
+              studyUrl={currentTrack.studyUrl}
+              initialTime={currentTrack.startOffsetSec}
+              tracks={daySchedule?.tracks}
+              activeTrackIndex={activeTrackIndex}
+              onSelectTrack={(tIdx) => {
+                setActiveTrackIndex(tIdx);
+                const target = daySchedule?.tracks[tIdx];
+                const start = target?.startOffsetSec || 0;
+                setAudioCurrentTime(start);
+                setSeekTarget({ time: start, timestamp: Date.now() });
+              }}
               activeParagraphIndex={activeParagraphIndex}
               totalParagraphs={paragraphs.length}
-              onTimeUpdate={(cur, dur) => {
+              onTimeUpdate={(cur) => {
                 setAudioCurrentTime(cur);
-                setAudioDuration(dur);
               }}
               onPlayingChange={setIsAudioPlaying}
               seekTarget={seekTarget}
@@ -387,47 +354,83 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
           <div className={`space-y-4 text-slate-800 dark:text-slate-200 ${fontFamilyClass} ${fontSizeClasses[settings.fontSize]}`}>
             {paragraphs.map((p, idx) => {
               const isActive = isAudioPlaying && activeParagraphIndex === idx;
+              // Check if a chapter section header should be rendered before this paragraph
+              const sectionTrack = daySchedule?.tracks && daySchedule.tracks.length > 1
+                ? daySchedule.tracks.find((t) => t.paragraphIndices[0] === idx)
+                : null;
+
               return (
-                <div
-                  key={idx}
-                  ref={(el) => {
-                    paragraphRefs.current[idx] = el;
-                  }}
-                  onClick={() => handleJumpToParagraph(idx)}
-                  className={`relative group p-3.5 sm:p-4 rounded-2xl transition-all duration-300 cursor-pointer ${
-                    isActive
-                      ? 'border-l-4 border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/40 shadow-xs'
-                      : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/40 border-l-4 border-transparent'
-                  }`}
-                  title="Click to jump Zac's audio to this paragraph"
-                >
-                  {/* Active Speaking Indicator */}
-                  {isActive && (
-                    <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-indigo-200/60 dark:border-indigo-900/60 animate-in fade-in duration-200">
-                      <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
-                        <Volume2 className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
-                        <span>Zac is speaking here • Paragraph {idx + 1} of {paragraphs.length}</span>
-                      </span>
-                      <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-full">
-                        Reading Sync Active
-                      </span>
+                <React.Fragment key={idx}>
+                  {sectionTrack && (
+                    <div className="pt-4 pb-2 border-b border-indigo-200/60 dark:border-indigo-800/60 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                          Chapter {sectionTrack.chapterNumber}
+                        </span>
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                          {sectionTrack.chapterTitle}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const tIdx = daySchedule ? daySchedule.tracks.indexOf(sectionTrack) : -1;
+                          if (tIdx !== -1) {
+                            setActiveTrackIndex(tIdx);
+                            setSeekTarget({ time: sectionTrack.startOffsetSec, timestamp: Date.now() });
+                          }
+                        }}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all active:scale-95 ${
+                          currentTrack?.chapterNumber === sectionTrack.chapterNumber
+                            ? 'bg-indigo-600 text-white border-indigo-700 shadow-2xs'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        <span>Listen to Ch. {sectionTrack.chapterNumber}</span>
+                      </button>
                     </div>
                   )}
 
-                  <p className="leading-relaxed">
-                    {p}
-                  </p>
+                  <div
+                    ref={(el) => {
+                      paragraphRefs.current[idx] = el;
+                    }}
+                    onClick={() => handleJumpToParagraph(idx)}
+                    className={`relative group p-3.5 sm:p-4 rounded-2xl transition-all duration-300 cursor-pointer ${
+                      isActive
+                        ? 'border-l-4 border-indigo-600 bg-indigo-50/80 dark:bg-indigo-950/40 shadow-xs'
+                        : 'hover:bg-slate-100/60 dark:hover:bg-slate-800/40 border-l-4 border-transparent'
+                    }`}
+                    title="Click to jump Zac's audio to this paragraph"
+                  >
+                    {/* Active Speaking Indicator */}
+                    {isActive && (
+                      <div className="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-indigo-200/60 dark:border-indigo-900/60 animate-in fade-in duration-200">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+                          <Volume2 className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                          <span>Zac is speaking here • Paragraph {idx + 1} of {paragraphs.length}</span>
+                        </span>
+                        <span className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100 dark:bg-indigo-900/60 px-2 py-0.5 rounded-full">
+                          Reading Sync Active
+                        </span>
+                      </div>
+                    )}
 
-                  {/* Hover / Tap Hint */}
-                  {!isActive && (
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2 flex justify-end">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100/80 dark:bg-indigo-900/60 px-2.5 py-0.5 rounded-full">
-                        <Play className="w-2.5 h-2.5 fill-current" />
-                        <span>Listen to this section</span>
-                      </span>
-                    </div>
-                  )}
-                </div>
+                    <p className="leading-relaxed">
+                      {p}
+                    </p>
+
+                    {/* Hover / Tap Hint */}
+                    {!isActive && (
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2 flex justify-end">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-100/80 dark:bg-indigo-900/60 px-2.5 py-0.5 rounded-full">
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          <span>Listen to this section</span>
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </React.Fragment>
               );
             })}
           </div>
