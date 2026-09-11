@@ -30,11 +30,19 @@ export interface SermonPlanResponse {
 export interface BookChapter {
   number: number;
   title: string;
+  audio_url?: string;
+  audio?: string;
+  mp3?: string;
+  url?: string;
 }
 
 export interface BookDailyScheduleItem {
   text: string;
   chapters: BookChapter[];
+  audio_url?: string;
+  audio?: string;
+  mp3?: string;
+  url?: string;
 }
 
 export interface BookStudyResponse {

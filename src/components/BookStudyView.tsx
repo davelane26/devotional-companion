@@ -3,6 +3,7 @@ import { BookOpen, ExternalLink, CheckCircle2, ChevronDown, ListFilter } from 'l
 import { BookStudyResponse, ReaderSettings } from '../types/devotional';
 import { DateScrubber, ScrubberItem } from './DateScrubber';
 import { ReflectionNotes } from './ReflectionNotes';
+import { AudioPlayer } from './AudioPlayer';
 import { getTodayDateString, formatReadableDate } from '../utils/dateUtils';
 
 interface BookStudyViewProps {
@@ -116,6 +117,48 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
 
   const chapterTitle = currentReading?.chapters?.[0]?.title;
   const chapterNumber = currentReading?.chapters?.[0]?.number;
+
+  // Resolve audio tracks for current reading
+  const audioTracks = useMemo(() => {
+    if (!currentReading) return [];
+    const tracks: { title?: string; src: string }[] = [];
+
+    // 1. Check chapter level fields
+    if (currentReading.chapters && currentReading.chapters.length > 0) {
+      currentReading.chapters.forEach((ch) => {
+        const src =
+          ch.audio_url ||
+          ch.mp3 ||
+          ch.audio ||
+          (ch.url && (ch.url.endsWith('.mp3') || ch.url.includes('/audio/')) ? ch.url : undefined);
+        if (src && src.trim()) {
+          tracks.push({
+            title: `Chapter ${ch.number}: ${ch.title}`,
+            src: src.trim(),
+          });
+        }
+      });
+    }
+
+    // 2. If no chapter-level audio, check schedule item-level fields
+    if (tracks.length === 0) {
+      const src =
+        currentReading.audio_url ||
+        currentReading.mp3 ||
+        currentReading.audio ||
+        (currentReading.url && (currentReading.url.endsWith('.mp3') || currentReading.url.includes('/audio/'))
+          ? currentReading.url
+          : undefined);
+      if (src && src.trim()) {
+        tracks.push({
+          title: chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined,
+          src: src.trim(),
+        });
+      }
+    }
+
+    return tracks;
+  }, [currentReading, chapterTitle, chapterNumber]);
 
   return (
     <div className="space-y-6">
@@ -247,6 +290,15 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
               <span>{isCurrentCompleted ? 'Completed' : 'Mark as Read'}</span>
             </button>
           </div>
+
+          {/* Audio Player (beneath chapter title) */}
+          {audioTracks.length > 0 && (
+            <div className="space-y-3">
+              {audioTracks.map((track, idx) => (
+                <AudioPlayer key={idx} src={track.src} title={track.title} />
+              ))}
+            </div>
+          )}
 
           {/* Reading Text Content */}
           <div className={`space-y-5 text-slate-800 dark:text-slate-200 ${fontFamilyClass} ${fontSizeClasses[settings.fontSize]}`}>
