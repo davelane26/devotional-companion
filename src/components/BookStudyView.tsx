@@ -5,6 +5,7 @@ import { DateScrubber, ScrubberItem } from './DateScrubber';
 import { ReflectionNotes } from './ReflectionNotes';
 import { AudioPlayer } from './AudioPlayer';
 import { getTodayDateString, formatReadableDate } from '../utils/dateUtils';
+import { getBasicChristianTeachingsAudio } from '../utils/speechUtils';
 
 interface BookStudyViewProps {
   bookData: BookStudyResponse;
@@ -121,7 +122,7 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
   // Resolve audio tracks for current reading
   const audioTracks = useMemo(() => {
     if (!currentReading) return [];
-    const tracks: { title?: string; src: string }[] = [];
+    const tracks: { title?: string; src: string; studyUrl?: string }[] = [];
 
     // 1. Check chapter level fields
     if (currentReading.chapters && currentReading.chapters.length > 0) {
@@ -153,6 +154,18 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
         tracks.push({
           title: chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined,
           src: src.trim(),
+        });
+      }
+    }
+
+    // 3. Fallback: resolve CFC India audio for Basic Christian Teachings
+    if (tracks.length === 0 && chapterNumber && chapterTitle) {
+      const bctAudio = getBasicChristianTeachingsAudio(chapterNumber, chapterTitle);
+      if (bctAudio) {
+        tracks.push({
+          title: `Chapter ${chapterNumber}: ${chapterTitle}`,
+          src: bctAudio.audioUrl,
+          studyUrl: bctAudio.studyUrl,
         });
       }
     }
@@ -292,18 +305,12 @@ export const BookStudyView: React.FC<BookStudyViewProps> = ({ bookData, settings
           </div>
 
           {/* Audio Player (beneath chapter title) */}
-          {audioTracks.length > 0 ? (
-            <div className="space-y-3">
-              {audioTracks.map((track, idx) => (
-                <AudioPlayer key={idx} src={track.src} title={track.title} />
-              ))}
-            </div>
-          ) : (
-            <AudioPlayer
-              text={currentReading.text}
-              title={chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined}
-            />
-          )}
+          <AudioPlayer
+            src={audioTracks[0]?.src}
+            text={currentReading.text}
+            title={chapterTitle ? `Chapter ${chapterNumber}: ${chapterTitle}` : undefined}
+            studyUrl={audioTracks[0]?.studyUrl}
+          />
 
           {/* Reading Text Content */}
           <div className={`space-y-5 text-slate-800 dark:text-slate-200 ${fontFamilyClass} ${fontSizeClasses[settings.fontSize]}`}>
