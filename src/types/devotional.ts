@@ -61,7 +61,7 @@ export type ReaderTheme = 'light' | 'sepia' | 'dark';
 
 export type ReaderFontSize = 'sm' | 'base' | 'lg' | 'xl';
 
-export type BibleTranslation = 'NASB1995' | 'ESV' | 'NIV' | 'KJV' | 'CSB' | 'NLT';
+export type BibleTranslation = 'NASB1995' | 'ESV' | 'NIV' | 'NKJV' | 'KJV' | 'CSB' | 'NLT';
 
 export interface ReaderSettings {
   theme: ReaderTheme;

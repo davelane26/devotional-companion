@@ -27,7 +27,7 @@ A distraction-free, mobile-first Progressive Web App (PWA) built with **React**,
   - **Themes:** Clean Light, Warm Sepia (book paper style), and Night / Dark Mode.
   - **Typography Controls:** Small, Normal, Large, and Extra Large font sizes.
   - **Typeface Selection:** Serif (Classic book style) and Sans (Modern interface).
-  - **Scripture Links:** Tap any scripture reference to read it directly on BibleGateway (NASB).
+  - **Scripture Links & Translation Switcher:** Tap any scripture reference to read it directly on BibleGateway with your preferred translation (NASB 1995, ESV, NIV, NKJV, KJV, CSB, NLT).
 
 - **Personal Reflection Notes & Journal:**
   - Auto-saving reflection notes attached to each sermon day and book chapter.

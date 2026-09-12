@@ -2,19 +2,23 @@
  * Helper utilities for formatting and linking scripture references.
  */
 
+import { BibleTranslation } from '../types/devotional';
+
 export interface TranslationOption {
-  code: 'NASB1995' | 'ESV' | 'NIV' | 'KJV' | 'CSB' | 'NLT';
+  code: BibleTranslation;
   label: string;
   name: string;
+  subtitle: string;
 }
 
 export const BIBLE_TRANSLATIONS: TranslationOption[] = [
-  { code: 'NASB1995', label: 'NASB 95', name: 'New American Standard 1995' },
-  { code: 'ESV', label: 'ESV', name: 'English Standard Version' },
-  { code: 'NIV', label: 'NIV', name: 'New International Version' },
-  { code: 'KJV', label: 'KJV', name: 'King James Version' },
-  { code: 'CSB', label: 'CSB', name: 'Christian Standard Bible' },
-  { code: 'NLT', label: 'NLT', name: 'New Living Translation' },
+  { code: 'NASB1995', label: 'NASB 95', name: 'New American Standard 1995', subtitle: 'Standard' },
+  { code: 'ESV', label: 'ESV', name: 'English Standard Version', subtitle: 'English' },
+  { code: 'NIV', label: 'NIV', name: 'New International Version', subtitle: 'International' },
+  { code: 'NKJV', label: 'NKJV', name: 'New King James Version', subtitle: 'New King' },
+  { code: 'KJV', label: 'KJV', name: 'King James Version', subtitle: 'King James' },
+  { code: 'CSB', label: 'CSB', name: 'Christian Standard Bible', subtitle: 'Christian' },
+  { code: 'NLT', label: 'NLT', name: 'New Living Translation', subtitle: 'Living' },
 ];
 
 /**

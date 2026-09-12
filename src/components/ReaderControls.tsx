@@ -181,7 +181,7 @@ export const ReaderControls: React.FC<ReaderControlsProps> = ({
             {settings.bibleTranslation}
           </span>
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
           {BIBLE_TRANSLATIONS.map((t) => {
             const isSelected = settings.bibleTranslation === t.code;
             return (
@@ -197,7 +197,7 @@ export const ReaderControls: React.FC<ReaderControlsProps> = ({
               >
                 <div className="font-bold">{t.label}</div>
                 <div className={`text-[9px] truncate mt-0.5 ${isSelected ? 'text-amber-100' : 'text-slate-400'}`}>
-                  {t.code === 'NASB1995' ? 'Standard' : t.name.split(' ')[0]}
+                  {t.subtitle}
                 </div>
               </button>
             );
