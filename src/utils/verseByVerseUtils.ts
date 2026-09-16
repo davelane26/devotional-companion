@@ -1,113 +1,177 @@
 /**
  * Zac Poonen "Verse by Verse" Bible study mapping and helper utilities.
  */
+import { VERSE_BY_VERSE_DATA, VerseByVerseTrack } from '../data/verseByVerseData';
 
-export interface VerseByVerseTrack {
-  book: string;
-  passageRange: string;
-  title: string;
-  audioUrl: string;
-  studyUrl: string;
-}
+export type { VerseByVerseTrack };
 
-// Known mappings for Verse-by-Verse audio tracks
-const VERSE_BY_VERSE_MAP: Record<string, VerseByVerseTrack[]> = {
-  Colossians: [
-    {
-      book: 'Colossians',
-      passageRange: '1:1 - 1:25',
-      title: 'Colossians Chapter 1:1 to 1:25',
-      audioUrl: 'https://www.cfcindia.org/resources/en/study-series/verse-by-verse/nt12-colossians-chapter-1-1-to-chapter-1-25.mp3',
-      studyUrl: 'https://www.cfcindia.com/verse-by-verse/01colossians-chapter-11-to-chapter-125',
-    },
-    {
-      book: 'Colossians',
-      passageRange: '1:25 - 2:18',
-      title: 'Colossians Chapter 1:25 to 2:18',
-      audioUrl: 'https://www.cfcindia.org/resources/en/study-series/verse-by-verse/nt12-colossians-chapter-1-25-to-chapter-2-18.mp3',
-      studyUrl: 'https://www.cfcindia.com/verse-by-verse/02colossians-chapter-125-to-chapter-218',
-    },
-    {
-      book: 'Colossians',
-      passageRange: '2:18 - 3:13',
-      title: 'Colossians Chapter 2:18 to 3:13',
-      audioUrl: 'https://www.cfcindia.org/resources/en/study-series/verse-by-verse/nt12-colossians-chapter-2-18-to-chapter-3-13.mp3',
-      studyUrl: 'https://www.cfcindia.com/verse-by-verse/03colossians-chapter-218-to-chapter-313',
-    },
-    {
-      book: 'Colossians',
-      passageRange: '3:14 - 4:18',
-      title: 'Colossians Chapter 3:14 to 4:18',
-      audioUrl: 'https://www.cfcindia.org/resources/en/study-series/verse-by-verse/nt12-colossians-chapter-3-14-to-chapter-4-18.mp3',
-      studyUrl: 'https://www.cfcindia.com/verse-by-verse/04colossians-chapter-314-to-chapter-418',
-    },
-  ],
-  Romans: [
-    {
-      book: 'Romans',
-      passageRange: '8:1 - 8:39',
-      title: 'Romans Chapter 8:1 to 8:39',
-      audioUrl: 'https://www.cfcindia.org/resources/en/study-series/verse-by-verse/nt06-romans-chapter-7-14-to-chapter-8-17.mp3',
-      studyUrl: 'https://www.cfcindia.com/verse-by-verse/Romans',
-    },
-  ],
-  James: [
-    {
-      book: 'James',
-      passageRange: '1:1 - 1:27',
-      title: 'James Chapter 1:1 to 1:25',
-      audioUrl: 'https://www.cfcindia.org/resources/en/study-series/verse-by-verse/nt20-james-chapter-1-1-to-chapter-1-25.mp3',
-      studyUrl: 'https://www.cfcindia.com/verse-by-verse/James',
-    },
-  ],
+const BOOK_ALIASES: Record<string, string> = {
+  '1cor': '1 Corinthians',
+  '1corinthians': '1 Corinthians',
+  '1 cor': '1 Corinthians',
+  '2cor': '2 Corinthians',
+  '2corinthians': '2 Corinthians',
+  '2 cor': '2 Corinthians',
+  '1thess': '1 Thessalonians',
+  '1thessalonians': '1 Thessalonians',
+  '1 thess': '1 Thessalonians',
+  '2thess': '2 Thessalonians',
+  '2thessalonians': '2 Thessalonians',
+  '2 thess': '2 Thessalonians',
+  '1tim': '1 Timothy',
+  '1timothy': '1 Timothy',
+  '1 tim': '1 Timothy',
+  '2tim': '2 Timothy',
+  '2timothy': '2 Timothy',
+  '2 tim': '2 Timothy',
+  '1pet': '1 Peter',
+  '1peter': '1 Peter',
+  '1 pet': '1 Peter',
+  '2pet': '2 Peter',
+  '2peter': '2 Peter',
+  '2 pet': '2 Peter',
+  '1jn': '1 John',
+  '1john': '1 John',
+  '1 jn': '1 John',
+  '1 john': '1 John',
+  '2jn': '2 John',
+  '2john': '2 John',
+  '2 jn': '2 John',
+  '2 john': '2 John',
+  '3jn': '3 John',
+  '3john': '3 John',
+  '3 jn': '3 John',
+  '3 john': '3 John',
+  'phil': 'Philippians',
+  'philippians': 'Philippians',
+  'col': 'Colossians',
+  'colossians': 'Colossians',
+  'rom': 'Romans',
+  'romans': 'Romans',
+  'heb': 'Hebrews',
+  'hebrews': 'Hebrews',
+  'jas': 'James',
+  'james': 'James',
+  'gal': 'Galatians',
+  'galatians': 'Galatians',
+  'eph': 'Ephesians',
+  'ephesians': 'Ephesians',
+  'rev': 'Revelation',
+  'revelation': 'Revelation',
+  'gen': 'Genesis',
+  'genesis': 'Genesis',
+  'matt': 'Matthew',
+  'matthew': 'Matthew',
+  'mt': 'Matthew',
+  'mk': 'Mark',
+  'mark': 'Mark',
+  'lk': 'Luke',
+  'luke': 'Luke',
+  'jn': 'John',
+  'john': 'John',
+  'acts': 'Acts',
+  'act': 'Acts',
+  'titus': 'Titus',
+  'tit': 'Titus',
+  'phlm': 'Philemon',
+  'philemon': 'Philemon',
+  'jude': 'Jude',
 };
 
-/**
- * Extract book name from a memory verse or scripture citation string.
- * e.g., "Colossians 3:2" -> "Colossians"
- */
-export function extractBookAndChapter(text: string): { book: string; chapter: number; verse?: number } | null {
-  // Matches e.g. "Colossians 3:2" or "1 Corinthians 9:24" or "Romans 8:11"
-  const regex = /(?:[123]\s+)?[A-Za-z]+\s+\d+(?::\d+)?/g;
-  const matches = text.match(regex);
-  if (!matches || matches.length === 0) return null;
+export function normalizeBookName(bookName: string): string {
+  const clean = bookName.trim();
+  const key = clean.toLowerCase();
+  if (BOOK_ALIASES[key]) return BOOK_ALIASES[key];
 
-  const ref = matches[0].trim();
-  const parts = ref.split(/\s+/);
-  const chapterVerse = parts.pop() || '';
-  const book = parts.join(' ');
+  const compact = key.replace(/[\s\-_]+/g, '');
+  if (BOOK_ALIASES[compact]) return BOOK_ALIASES[compact];
 
-  const [ch, v] = chapterVerse.split(':').map(Number);
-  return { book, chapter: ch, verse: v };
+  for (const k of Object.keys(VERSE_BY_VERSE_DATA)) {
+    if (k.toLowerCase() === key) return k;
+  }
+  return clean;
 }
 
 /**
- * Find the matching Zac Poonen Verse-by-Verse track for a given passage/memory verse.
+ * Extract book name, chapter, and verse from a memory verse or scripture citation string.
+ * e.g., '"The Kingdom of God..." —Romans 14:17, NASB' -> { book: "Romans", chapter: 14, verse: 17 }
+ */
+export function extractBookAndChapter(text: string): { book: string; chapter: number; verse?: number } | null {
+  if (!text) return null;
+
+  // If there's an em-dash, en-dash, or hyphen attributing the reference at the end, isolate that portion
+  const dashParts = text.split(/[—–-]/);
+  const citationCandidate = dashParts.length > 1 ? dashParts[dashParts.length - 1] : text;
+
+  // Matches citations like "Romans 14:17", "1 Corinthians 9:24", "Colossians 3:2"
+  const regex = /(?:[123]\s+)?[A-Za-z]+\s+\d+(?::\d+)?/g;
+  const matches = citationCandidate.match(regex) || text.match(regex);
+  if (!matches || matches.length === 0) return null;
+
+  const ref = matches[matches.length - 1].trim();
+  const parts = ref.split(/\s+/);
+  const chapterVerse = parts.pop() || '';
+  const rawBook = parts.join(' ');
+  const book = normalizeBookName(rawBook);
+
+  if (chapterVerse.includes(':')) {
+    const [ch, v] = chapterVerse.split(':').map(Number);
+    return { book, chapter: ch, verse: isNaN(v) ? undefined : v };
+  } else {
+    const ch = parseInt(chapterVerse, 10);
+    return { book, chapter: isNaN(ch) ? 1 : ch, verse: undefined };
+  }
+}
+
+/**
+ * Find the matching Zac Poonen Verse-by-Verse track for a given passage or memory verse.
  */
 export function getZacPoonenVerseByVerseTrack(memoryVerseText: string): VerseByVerseTrack | null {
   const parsed = extractBookAndChapter(memoryVerseText);
   if (!parsed) return null;
 
-  const tracks = VERSE_BY_VERSE_MAP[parsed.book];
+  const tracks = VERSE_BY_VERSE_DATA[parsed.book];
   if (!tracks || tracks.length === 0) {
-    // Return generic study URL for the book
-    return {
-      book: parsed.book,
-      passageRange: `${parsed.book} ${parsed.chapter}`,
-      title: `${parsed.book} Verse-by-Verse Study`,
-      audioUrl: '',
-      studyUrl: `https://www.cfcindia.com/verse-by-verse/${parsed.book.replace(/\s+/g, '-')}`,
-    };
+    return null;
   }
 
-  // Specifically match Colossians 3:2 to track 3 (2:18 - 3:13)
-  if (parsed.book === 'Colossians') {
-    if (parsed.chapter === 1) return tracks[0];
-    if (parsed.chapter === 2 && (parsed.verse || 0) < 18) return tracks[1];
-    if (parsed.chapter === 2 || (parsed.chapter === 3 && (parsed.verse || 0) <= 13)) return tracks[2];
-    return tracks[3];
+  const targetCh = parsed.chapter;
+  const targetV = parsed.verse ?? 1;
+
+  // 1. Precise range matching: check if (targetCh, targetV) falls in passageRange (sCh:sV - eCh:eV)
+  for (const track of tracks) {
+    const pr = track.passageRange;
+    if (!pr || !pr.includes('-')) continue;
+
+    const [startStr, endStr] = pr.split('-').map((s) => s.trim());
+    if (!startStr.includes(':') || !endStr.includes(':')) continue;
+
+    const [sCh, sV] = startStr.split(':').map(Number);
+    const [eCh, eV] = endStr.split(':').map(Number);
+
+    const afterStart = targetCh > sCh || (targetCh === sCh && targetV >= sV);
+    const beforeEnd = targetCh < eCh || (targetCh === eCh && targetV <= eV);
+
+    if (afterStart && beforeEnd) {
+      return track;
+    }
   }
 
-  return tracks[0];
+  // 2. Fallback: match by chapter boundaries if verse fell slightly outside or wasn't specified
+  for (const track of tracks) {
+    const pr = track.passageRange;
+    if (!pr || !pr.includes('-')) continue;
+
+    const [startStr, endStr] = pr.split('-').map((s) => s.trim());
+    const sCh = parseInt(startStr.split(':')[0], 10);
+    const eCh = parseInt(endStr.split(':')[0], 10);
+
+    if (!isNaN(sCh) && !isNaN(eCh) && sCh <= targetCh && targetCh <= eCh) {
+      return track;
+    }
+  }
+
+  // 3. If single track exists for the book, or fallback to first track
+  return tracks[0] || null;
 }
 

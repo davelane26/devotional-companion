@@ -28,9 +28,9 @@ export const MemoryVerseCard: React.FC<MemoryVerseCardProps> = ({
 
   const rates = [1, 1.25, 1.5, 2];
 
-  // Extract reference like "Colossians 3:2" from string
-  const refMatch = memoryVerse.match(/—\s*([^,]+)/);
-  const passageRef = refMatch ? refMatch[1].trim() : 'Colossians 3:2';
+  // Extract reference like "Romans 14:17" or "Colossians 3:2" from string
+  const refMatch = memoryVerse.match(/[—–-]\s*([^,]+)/);
+  const passageRef = refMatch ? refMatch[1].trim() : memoryVerse;
 
   return (
     <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent border border-amber-500/30 shadow-sm space-y-3.5 transition-colors">
@@ -100,7 +100,7 @@ export const MemoryVerseCard: React.FC<MemoryVerseCardProps> = ({
             <div className="p-3 rounded-2xl bg-white/90 dark:bg-slate-900/90 border border-amber-200 dark:border-amber-800/60 shadow-sm space-y-2 animate-in fade-in slide-in-from-top-1 duration-150">
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="font-semibold text-slate-700 dark:text-slate-300 truncate">
-                  Exposition: {track.passageRange}
+                  Exposition: {track.book} {track.passageRange}
                 </span>
 
                 {/* Speed Controls */}
