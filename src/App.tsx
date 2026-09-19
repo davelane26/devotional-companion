@@ -6,6 +6,7 @@ import { Header } from './components/Header';
 import { NavigationTabs, MobileBottomBar } from './components/NavigationTabs';
 import { SermonView } from './components/SermonView';
 import { BookStudyView } from './components/BookStudyView';
+import { WordOfTheWeekView } from './components/WordOfTheWeekView';
 import { JournalView } from './components/JournalView';
 import { QrCodeModal } from './components/QrCodeModal';
 import { ActiveTab } from './types/devotional';
@@ -57,7 +58,7 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectReadingFromJournal = (type: 'sermon' | 'book') => {
+  const handleSelectReadingFromJournal = (type: 'sermon' | 'book' | 'wftw') => {
     setActiveTab(type);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -139,6 +140,11 @@ export const App: React.FC = () => {
         {/* Book Study View */}
         {activeTab === 'book' && bookStudy && (
           <BookStudyView bookData={bookStudy} settings={settings} />
+        )}
+
+        {/* Word of the Week View */}
+        {activeTab === 'wftw' && (
+          <WordOfTheWeekView settings={settings} />
         )}
 
         {/* Journal View */}

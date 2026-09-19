@@ -55,7 +55,7 @@ export interface BookStudyResponse {
 }
 
 // Reader & Navigation State
-export type ActiveTab = 'sermon' | 'book' | 'journal';
+export type ActiveTab = 'sermon' | 'book' | 'wftw' | 'journal';
 
 export type ReaderTheme = 'light' | 'sepia' | 'dark';
 
@@ -72,12 +72,32 @@ export interface ReaderSettings {
 
 // Journal Note
 export interface ReflectionNote {
-  id: string; // e.g., "sermon-2026-09-10" or "book-2026-09-10"
-  type: 'sermon' | 'book';
+  id: string; // e.g., "sermon-2026-09-10" or "book-2026-09-10" or "wftw-2026-09-20"
+  type: 'sermon' | 'book' | 'wftw';
   date: string; // YYYY-MM-DD
   title: string;
   subtitle?: string;
   content: string;
   updatedAt: string; // ISO string
 }
+
+// Word for the Week (WFTW) from CFC India
+export interface WftwArticle {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  displayDate: string; // e.g. "Sep 20, 2026"
+  author: string;
+  summary: string;
+  scriptures: string[];
+  paragraphs: string[];
+  sourceUrl?: string;
+  audioUrl?: string;
+}
+
+export interface WftwDataResponse {
+  updatedAt: string;
+  articles: WftwArticle[];
+}
+
 

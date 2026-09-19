@@ -1,5 +1,5 @@
 import React from 'react';
-import { Radio, BookOpen, NotebookPen } from 'lucide-react';
+import { Radio, BookOpen, NotebookPen, Sparkles } from 'lucide-react';
 import { ActiveTab } from '../types/devotional';
 
 interface NavigationTabsProps {
@@ -23,6 +23,11 @@ export const NavigationTabs: React.FC<NavigationTabsProps> = ({
       id: 'book',
       label: 'Book Study',
       icon: <BookOpen className="w-4 h-4" />,
+    },
+    {
+      id: 'wftw',
+      label: 'Word of Week',
+      icon: <Sparkles className="w-4 h-4" />,
     },
     {
       id: 'journal',
@@ -79,6 +84,11 @@ export const MobileBottomBar: React.FC<NavigationTabsProps> = ({
       id: 'book',
       label: 'Book Study',
       icon: <BookOpen className="w-5 h-5" />,
+    },
+    {
+      id: 'wftw',
+      label: 'Word of Week',
+      icon: <Sparkles className="w-5 h-5" />,
     },
     {
       id: 'journal',

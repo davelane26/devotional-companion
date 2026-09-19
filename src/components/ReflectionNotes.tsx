@@ -4,7 +4,7 @@ import { ReflectionNote } from '../types/devotional';
 
 interface ReflectionNotesProps {
   noteId: string;
-  type: 'sermon' | 'book';
+  type: 'sermon' | 'book' | 'wftw';
   dateStr: string;
   title: string;
   subtitle?: string;

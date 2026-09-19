@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { NotebookPen, Search, Download, Trash2, Calendar, Radio, BookOpen } from 'lucide-react';
+import { NotebookPen, Search, Download, Trash2, Calendar, Radio, BookOpen, Sparkles } from 'lucide-react';
 import { ReflectionNote } from '../types/devotional';
 import { formatReadableDate } from '../utils/dateUtils';
 
 interface JournalViewProps {
-  onSelectReading?: (type: 'sermon' | 'book', idOrDate: string) => void;
+  onSelectReading?: (type: 'sermon' | 'book' | 'wftw', idOrDate: string) => void;
 }
 
 const STORAGE_INDEX_KEY = 'all_devotional_reflection_notes_index';
@@ -12,7 +12,7 @@ const STORAGE_INDEX_KEY = 'all_devotional_reflection_notes_index';
 export const JournalView: React.FC<JournalViewProps> = ({ onSelectReading }) => {
   const [notes, setNotes] = useState<ReflectionNote[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'sermon' | 'book'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'sermon' | 'book' | 'wftw'>('all');
 
   // Load all notes from localStorage
   const loadNotes = () => {
@@ -69,7 +69,8 @@ export const JournalView: React.FC<JournalViewProps> = ({ onSelectReading }) => 
 
     notes.forEach((n) => {
       exportText += `## ${n.title}\n`;
-      exportText += `**Type:** ${n.type === 'sermon' ? 'Sermon Plan' : 'Book Study'} | **Date:** ${n.date}\n\n`;
+      const typeLabel = n.type === 'sermon' ? 'Sermon Plan' : n.type === 'wftw' ? 'Word for the Week' : 'Book Study';
+      exportText += `**Type:** ${typeLabel} | **Date:** ${n.date}\n\n`;
       exportText += `${n.content}\n\n---\n\n`;
     });
 
@@ -138,18 +139,24 @@ export const JournalView: React.FC<JournalViewProps> = ({ onSelectReading }) => 
         </div>
 
         {/* Filter Pills */}
-        <div className="flex items-center gap-1 self-stretch sm:self-auto justify-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700">
-          {(['all', 'sermon', 'book'] as const).map((type) => (
+        <div className="flex items-center gap-1 self-stretch sm:self-auto justify-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
+          {(['all', 'sermon', 'book', 'wftw'] as const).map((type) => (
             <button
               key={type}
               onClick={() => setFilterType(type)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
                 filterType === type
                   ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 font-semibold shadow-sm'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              {type === 'all' ? 'All' : type === 'sermon' ? 'Sermon' : 'Book'}
+              {type === 'all'
+                ? 'All'
+                : type === 'sermon'
+                ? 'Sermon'
+                : type === 'book'
+                ? 'Book'
+                : 'Word of Week'}
             </button>
           ))}
         </div>
@@ -191,12 +198,18 @@ export const JournalView: React.FC<JournalViewProps> = ({ onSelectReading }) => 
                         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                           note.type === 'sermon'
                             ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-300'
+                            : note.type === 'wftw'
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/80 dark:text-purple-300'
                             : 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300'
                         }`}
                       >
                         {note.type === 'sermon' ? (
                           <>
                             <Radio className="w-3 h-3" /> Sermon
+                          </>
+                        ) : note.type === 'wftw' ? (
+                          <>
+                            <Sparkles className="w-3 h-3" /> Word of Week
                           </>
                         ) : (
                           <>
