@@ -58,6 +58,11 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  const handleTabChange = (tab: ActiveTab) => {
+    setActiveTab(tab);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSelectReadingFromJournal = (type: 'sermon' | 'book' | 'wftw') => {
     setActiveTab(type);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -87,10 +92,10 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-3xl w-full mx-auto px-4 py-4 sm:py-6 space-y-5 pb-24 sm:pb-12">
-        {/* Navigation Tabs (Top) */}
+        {/* Navigation Tabs (Top - Tablet & Desktop) */}
         <NavigationTabs
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={handleTabChange}
           notesCount={notesCount}
         />
 
@@ -156,7 +161,7 @@ export const App: React.FC = () => {
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomBar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         notesCount={notesCount}
       />
 
