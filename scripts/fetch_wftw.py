@@ -9,6 +9,8 @@ import json
 import re
 import os
 
+from datetime import datetime
+
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 }
@@ -22,14 +24,44 @@ def clean_text(text):
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
 
+def get_latest_article_urls(target_count=5):
+    """Dynamically discover the newest WFTW article URLs from CFC India's listing."""
+    urls = []
+    now = datetime.now()
+    year = now.year
+    month = now.month
+
+    # Check current month, plus previous 2 months if needed
+    for _ in range(3):
+        listing_url = f"https://www.cfcindia.com/wftw?&y={year}&m={month}"
+        try:
+            resp = requests.get(listing_url, headers=HEADERS, timeout=20)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.content, 'html.parser')
+                for el in soup.select('.wftw-title a, .wftw_title a'):
+                    href = el.get('href', '').strip()
+                    if href and href.startswith('http') and href not in urls:
+                        urls.append(href)
+                        if len(urls) >= target_count:
+                            return urls
+        except Exception as e:
+            print(f"Warning fetching {listing_url}: {e}")
+
+        # Roll back one month
+        month -= 1
+        if month == 0:
+            month = 12
+            year -= 1
+
+    return urls
+
 def scrape_articles():
-    urls = [
-        'https://www.cfcindia.com/wftw/learn-wisdom-daily',
-        'https://www.cfcindia.com/wftw/do-not-judge-2',
-        'https://www.cfcindia.com/wftw/few-will-find-the-narrow-way',
-        'https://www.cfcindia.com/wftw/seek-the-gifts-of-the-spirit-to-serve-others',
-        'https://www.cfcindia.com/wftw/jesus-is-building-a-pure-church'
-    ]
+    print("Discovering latest Word for the Week article URLs from cfcindia.com...")
+    urls = get_latest_article_urls(target_count=5)
+    print(f"Found {len(urls)} article(s):")
+    for u in urls:
+        print(f"  -> {u}")
+
     
     articles = []
     for idx, url in enumerate(urls):
