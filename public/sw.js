@@ -1,4 +1,4 @@
-const CACHE_NAME = 'devotional-cache-v5';
+const CACHE_NAME = 'devotional-cache-202609260655';
 const STATIC_ASSETS = [
   './',
   './index.html',
