@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
-import { SermonPlanResponse, BookStudyResponse } from '../types/devotional';
+import { SermonPlanResponse, BookStudyResponse, WftwArticle, WftwDataResponse } from '../types/devotional';
+import { WFTW_ARTICLES } from '../data/wftwData';
 
 const SERMON_PLAN_URL = 'https://davelane26.github.io/rlcf-study-plan/output/latest.json';
 const BOOK_STUDY_URL = 'https://davelane26.github.io/book-study-plan/output/book-schedule.json';
+const WFTW_PRIMARY_URL = `${import.meta.env.BASE_URL}wftw.json`;
+const WFTW_FALLBACK_URL = 'https://raw.githubusercontent.com/davelane26/devotional-companion/main/public/wftw.json';
 
 const CACHE_KEY_SERMON = 'cached_sermon_plan_data';
 const CACHE_KEY_BOOK = 'cached_book_study_data';
+const CACHE_KEY_WFTW = 'cached_wftw_articles';
 const CACHE_KEY_TIMESTAMP = 'cached_devotional_timestamp';
 
 export function useDevotionalData() {
@@ -25,6 +29,19 @@ export function useDevotionalData() {
     } catch {
       return null;
     }
+  });
+
+  const [wftwArticles, setWftwArticles] = useState<WftwArticle[]>(() => {
+    try {
+      const cached = localStorage.getItem(CACHE_KEY_WFTW);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // fallback
+    }
+    return WFTW_ARTICLES;
   });
 
   const [loading, setLoading] = useState<boolean>(() => !sermonPlan || !bookStudy);
@@ -80,7 +97,26 @@ export function useDevotionalData() {
       errors.push('Book study update failed (using cached data if available)');
     }
 
-    if (sermonData || bookData) {
+    // Fetch Word of the Week
+    let wftwUpdated = false;
+    try {
+      let res = await fetch(WFTW_PRIMARY_URL, { cache: 'no-cache' });
+      if (!res.ok) {
+        res = await fetch(WFTW_FALLBACK_URL, { cache: 'no-cache' });
+      }
+      if (res.ok) {
+        const data: WftwDataResponse = await res.json();
+        if (data && Array.isArray(data.articles) && data.articles.length > 0) {
+          setWftwArticles(data.articles);
+          localStorage.setItem(CACHE_KEY_WFTW, JSON.stringify(data.articles));
+          wftwUpdated = true;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch Word of the Week from network:', err);
+    }
+
+    if (sermonData || bookData || wftwUpdated) {
       const nowStr = new Date().toISOString();
       setLastFetched(nowStr);
       localStorage.setItem(CACHE_KEY_TIMESTAMP, nowStr);
@@ -101,6 +137,7 @@ export function useDevotionalData() {
   return {
     sermonPlan,
     bookStudy,
+    wftwArticles,
     loading,
     error,
     isOffline,

@@ -13,7 +13,7 @@ import {
   CheckCircle2,
   Sliders,
 } from 'lucide-react';
-import { ReaderSettings } from '../types/devotional';
+import { ReaderSettings, WftwArticle } from '../types/devotional';
 import { WFTW_ARTICLES } from '../data/wftwData';
 import { useNaturalSpeech } from '../hooks/useNaturalSpeech';
 import { getBibleGatewayUrl } from '../utils/scriptureUtils';
@@ -21,12 +21,13 @@ import { ReflectionNotes } from './ReflectionNotes';
 
 interface WordOfTheWeekViewProps {
   settings: ReaderSettings;
+  articles?: WftwArticle[];
 }
 
-export const WordOfTheWeekView: React.FC<WordOfTheWeekViewProps> = ({ settings }) => {
+export const WordOfTheWeekView: React.FC<WordOfTheWeekViewProps> = ({ settings, articles: propArticles }) => {
   // Articles: sorted latest first (index 0 = newest)
-  const articles = WFTW_ARTICLES;
-  const [selectedArticleId, setSelectedArticleId] = useState<string>(() => articles[0]?.id || '');
+  const articles = propArticles && propArticles.length > 0 ? propArticles : WFTW_ARTICLES;
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [showVoicePicker, setShowVoicePicker] = useState(false);
   const [completedArticles, setCompletedArticles] = useState<string[]>(() => {
@@ -38,7 +39,7 @@ export const WordOfTheWeekView: React.FC<WordOfTheWeekViewProps> = ({ settings }
     }
   });
 
-  const activeArticle = articles.find((a) => a.id === selectedArticleId) || articles[0];
+  const activeArticle = (selectedArticleId ? articles.find((a) => a.id === selectedArticleId) : null) || articles[0];
   const paragraphs = activeArticle ? activeArticle.paragraphs : [];
 
   const paragraphRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -75,7 +76,7 @@ export const WordOfTheWeekView: React.FC<WordOfTheWeekViewProps> = ({ settings }
   // Reset paragraph refs array when article changes
   useEffect(() => {
     paragraphRefs.current = [];
-  }, [selectedArticleId]);
+  }, [activeArticle?.id]);
 
   const toggleCompleted = (id: string) => {
     setCompletedArticles((prev) => {

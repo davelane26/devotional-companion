@@ -23,6 +23,7 @@ export const App: React.FC = () => {
   const {
     sermonPlan,
     bookStudy,
+    wftwArticles,
     loading,
     error,
     isOffline,
@@ -149,7 +150,7 @@ export const App: React.FC = () => {
 
         {/* Word of the Week View */}
         {activeTab === 'wftw' && (
-          <WordOfTheWeekView settings={settings} />
+          <WordOfTheWeekView settings={settings} articles={wftwArticles} />
         )}
 
         {/* Journal View */}

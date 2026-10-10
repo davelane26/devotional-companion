@@ -1,14 +1,17 @@
-const CACHE_NAME = 'devotional-cache-202610100756';
+const CACHE_NAME = 'devotional-cache-202610101530';
 const STATIC_ASSETS = [
   './',
   './index.html',
   './favicon.svg',
-  './manifest.webmanifest'
+  './manifest.webmanifest',
+  './wftw.json'
 ];
 
 const API_ENDPOINTS = [
   'https://davelane26.github.io/rlcf-study-plan/output/latest.json',
-  'https://davelane26.github.io/book-study-plan/output/book-schedule.json'
+  'https://davelane26.github.io/book-study-plan/output/book-schedule.json',
+  'https://davelane26.github.io/devotional-companion/wftw.json',
+  'https://raw.githubusercontent.com/davelane26/devotional-companion/main/public/wftw.json'
 ];
 
 self.addEventListener('install', (event) => {

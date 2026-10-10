@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   update-wftw:
@@ -34,6 +35,8 @@ jobs:
           cp src/data/wftwData.json public/wftw.json
 
       - name: Commit and push if updated
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if git diff --quiet src/data/wftwData.ts src/data/wftwData.json public/wftw.json; then
             echo "No new Word of the Week edition found; up to date."
@@ -50,3 +53,6 @@ jobs:
           git commit -m "Update Word of the Week ($(date +'%Y-%m-%d'))"
           git pull --rebase
           git push
+
+          # Trigger GitHub Pages deployment workflow
+          gh workflow run deploy.yml --ref main || true

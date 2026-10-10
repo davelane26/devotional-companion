@@ -143,8 +143,9 @@ if __name__ == '__main__':
     
     # Save as JSON
     json_path = os.path.join(out_dir, 'wftwData.json')
+    today_str = datetime.now().strftime('%Y-%m-%d')
     with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump({'updatedAt': '2026-09-18', 'articles': articles}, f, indent=2, ensure_ascii=False)
+        json.dump({'updatedAt': today_str, 'articles': articles}, f, indent=2, ensure_ascii=False)
     print(f'Wrote {len(articles)} articles to {json_path}')
 
     # Save as TypeScript
