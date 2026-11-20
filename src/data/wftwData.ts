@@ -3,6 +3,33 @@ import { WftwArticle } from "../types/devotional";
 
 export const WFTW_ARTICLES: WftwArticle[] = [
   {
+    "id": "wftw-2026-11-22",
+    "title": "How to Deal with Bad Fruit",
+    "date": "2026-11-22",
+    "displayDate": "Nov 22, 2026",
+    "author": "Zac Poonen",
+    "summary": "What should you do with the tree that does not bear good fruit?...",
+    "scriptures": [
+      "Matthew 7:19",
+      "Matthew 3:10",
+      "Galatians 5:24",
+      "Matthew 7:16",
+      "Matthew 7:20",
+      "John 6:38"
+    ],
+    "paragraphs": [
+      "What should you do with the tree that does not bear good fruit?",
+      "In Matthew 7:19, Jesus said that it must be cut down and thrown into the fire. The nature of ours that we have inherited from Adam needs to be crucified. That is the great need. That is the meaning of “cut down.” John the Baptist said that Jesus is coming with an axe that is laid at the root of the tree to cut it down (Matthew 3:10). He is going to cut it down in the root, throw it in the furnace, and replace it with another tree. Many people have not experienced this. They try to get rid of superficial sins in their life and respond to Christ. But the root is still there. It is like seeing a doctor. If you have symptoms, he will not just give you some ointment to get rid of those symptoms. He will give you an antibiotic that treats the root of the disease. When the root of the disease is treated, then its symptoms will disappear. That is how a good doctor treats patient who are sick. That is also how Jesus does it.",
+      "Jesus says that the root to all these problems in your life is a self-centered life. From that self-centered life, only fruit that seeks your own will come. You can tie nice fruit there and preach nice things like many preachers, but if you are a self-centered person, you will be seeking your own all the time. Until you hit the root of that, you are not going to be really experiencing the salvation that Christ came to give.",
+      "Numerous people who have come to our church in Bangalore have told me, “Brother Zac, I never knew what it was to be really converted until I came here. This is because I never knew what repentance was until I came to your church. I thought I was born again. I took baptism somewhere. But I never knew how serious sin was. I never knew what repentance was because I did not know what sin I had to turn from. When I came here, I saw and I heard what sin really was. It was a self-centered way of life. I saw that I had to turn from that. It is only now that I'm really saved.” I believe a lot of people who imagine they are born again, are really not, because they have not turned from their self-centeredness. The root of that bad nature is not being hit by the axe. That bad tree has not been cut down. They are trying to produce good fruit on a bad tree.",
+      "What is the mark of those who belong to Christ? Galatians 5:24 says, “Those who belong to Christ have crucified the flesh.” “The flesh” speaks of that self-centered life that wants to do its own will. The attitude of those that belong to Christ is to crucify that self-centered life. The Romans reserved crucifixion for the worst criminals in their society. The ordinary criminals will be just jailed; the worst criminals were crucified. When you see that this self-centered nature that you inherited from Adam is the worst possible criminal and deserves to be crucified, then you have understood what repentance is all about. Then you can belong to Christ, because all those who belong to Christ have taken this attitude.",
+      "We Must Crucify Our Self-Life",
+      "What is the right attitude to have towards my self-centered life? Crucify it with all its passions and desires. Some people will say that they belong to Christ even if they do not crucify their self-centered life. Suppose those who belong to Christ may not have crucified the flesh with its passions and desires. Then God's Word is meaningless. But God's Word is true. A tree that produces bad fruit must be cut down and thrown into the fire. Then we can have this other nature that the Holy Spirit gives us, that produces good fruit. Many people who have fruit, may not have the gifts of the Spirit. That does not matter. God gives different gifts to different people. If you can remember what Jesus repeated twice in Matthew 7, then you will be saved from a lot of deception. In Matthew 7:16, Jesus said that you will be able to identify a true and a false prophet, not by their gifts, but by their fruits. Again, Jesus says in Matthew 7:20, “You will know them by their fruits.” If only all Christians had just taken this one simple sentence to heart, we would be saved from a tremendous amount of deception in Christianity today.",
+      "Jesus then describes fruit as “Doing the will of My Father in heaven.” That is a beautiful expression of what good fruit is - doing the will of my Father, whatever it is. And that means denying your own will. You cannot do the will of God if you do not deny your own will. Jesus could not do the will of the Father in Gethsemane if He did not say, “Not My will.” That “not my will,” is described in Matthew 7:19 as cutting down that which does not bear good fruit. My will is always contrary to God's will. Man's human self-will is contrary to God's will, otherwise Jesus would not have said, “Not My will.” In heaven, before He became a man, He could say, “I do My Own will” because it was the same as His Father's will. However, the moment He came as a man, He said, in John 6:38, “I came from heaven not to do My Own will.” Why not, Lord?” Because it's not the same as My Father's will. “I came to do not My Own will, but the will of My Father.” We can describe it like this: in a cross, my will crosses God's will, and that is where I have to die. If I die there, then I will do God's will. It is only in this way, that we can bear good fruit."
+    ],
+    "sourceUrl": "https://www.cfcindia.com/wftw/how-to-deal-with-bad-fruit"
+  },
+  {
     "id": "wftw-2026-11-15",
     "title": "What Has Jesus Taught Us About Anger?",
     "date": "2026-11-15",
@@ -113,25 +140,5 @@ export const WFTW_ARTICLES: WftwArticle[] = [
       "Jesus was the happiest man Who ever walked on this earth. Yet He was the One Who suffered the most. His happiness came out of doing the will of His Father - not by having an easy way through life. He knew His Father as perfect love and so He joyfully submitted to all that the Father sent His way. That was the secret of His life."
     ],
     "sourceUrl": "https://www.cfcindia.com/wftw/gods-intense-love-for-us"
-  },
-  {
-    "id": "wftw-2026-10-18",
-    "title": "How to Know False Prophets",
-    "date": "2026-10-18",
-    "displayDate": "Oct 18, 2026",
-    "author": "Zac Poonen",
-    "summary": "Many people seek to identify a man of God by His gifts. That is the biggest mistake of Christians. They go directly against what Jesus has said in Matthew 7:16,...",
-    "scriptures": [
-      "Matthew 7:16",
-      "Matthew 7:18"
-    ],
-    "paragraphs": [
-      "Many people seek to identify a man of God by His gifts. That is the biggest mistake of Christians. They go directly against what Jesus has said in Matthew 7:16, that you will know these false prophets by their fruits, not by their gifts. He said that you will not be able to distinguish between a true prophet and a false prophet if you look at the gifts. Both may appear to have gifts. A true prophet has gifts, and a false prophet has gifts. But the true prophet also has fruit. If you want to know whether one of these is a true prophet of God, do not look to see if he has a healing gift. Do not look to see if he is eloquent. Do not look to see if his doctrines are right. Both of their doctrines will be right, but one of them has sheep's clothing.",
-      "The way to distinguish which one is the real sheep and which is the wolf is by their fruits. What is the fruit of the Spirit? This is primarily humility. Does he have humility? Does he have a genuine compassion for people? Is he free from the love of money? If he is always compelling you to pay your tithe, that is a wolf, without a shadow of a doubt. Most preachers are wolves like that today. A lot of them only preach on giving your tithe to their ministry. They give you all types of false promises that God will give you a hundred times if you give to their ministry. Do not be deceived by these preachers that dominate Christian television. They are ravenous wolves who are after your money.",
-      "“You will know them by their fruits.” Always look for fruit. For example, the fruits of goodness, kindness, and humility. Look for someone who treats you with respect and is not out to get your money. Look for the fruit of Jesus Christ in their life. Where do you find in the Bible that Jesus Christ went after anybody for their money? Never once did He take a collection and offering, at any time in His ministry. When He healed the sick, He did not take an offering. He did not ask His disciples to go with an offering bag and collect money from the people He healed, unlike what we see in today's healers and preachers. I believe they are counterfeits and deceivers compared to Jesus Christ. You never find any of the apostles going around with an offering bag after they preached to people or healed people. How will we have money for God's work? Yes, we can keep a box and let people voluntarily give. We should not put a bag in front of them and compel them to give. Also, the Bible teaches that Jesus and the Apostles would never take a cent from unbelievers. It is a great tragedy today that unbelievers are invited to a meeting, hear the gospel, and are asked to give money. Do you have to pay money to get your sins forgiven? Do you have to pay money to get healed? Beware of false prophets. They are worse than unbelievers.",
-      "Jesus said in Matthew 7:16, \"You do not go to thorn bushes to gather grapes; you do not go to thistles to get figs, do you?” It is so simple. If you want to go to get grapes, you go to a vine. You do not go to a thorn bush to get grapes. The fruit manifests what the tree is like. When you see thorns coming out of it, you know that is not fruit. Always look for fruit, not for gifts. Gifts can be deceptive. For example, Satan has tremendous gifts, but he does not have fruit, nor character. Satan can give those abilities to his servants. The Bible says that Satan’s servants can appear as ministers of righteousness.",
-      "Further, Jesus said that even so, every good tree bears good fruit. There is no doubt about it. A good tree will always bear good fruit. You can buy good fruit, tie it up on a bad tree, cut off all the bad fruit, and fool people that your tree is a good tree. But it isn’t. This is the way a lot of Christian behave. I look at a lot of Christians and see how they appear to be good in public, but are really bad in the way they live in their homes and in their offices. They live in unrighteousness, cheating, etc. I am reminded of a man who has a bad tree in his garden: it produces rotten, stinking, dried-up mangoes, but he doesn't want anybody to know, so he cuts them off, buys very luscious mangoes from the market, and ties it up very cleverly on this tree. People look at this tree and say, “Boy, what a lovely mango tree you have!” It looks very nice, but it is not coming from within the tree. It is something which is meant to deceive people. This is hypocrisy. A good tree will produce good fruit. “A good tree cannot produce bad fruit, and a bad tree cannot produce good fruit” (Matthew 7:18)."
-    ],
-    "sourceUrl": "https://www.cfcindia.com/wftw/how-to-know-false-prophets"
   }
 ];
